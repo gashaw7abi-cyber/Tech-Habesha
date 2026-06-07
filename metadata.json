@@ -1,0 +1,6 @@
+{
+  "name": "Tech Habesha",
+  "description": "A modern landing page for Tech Habesha",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

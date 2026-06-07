@@ -1,0 +1,36 @@
+{
+  "projectInfo": {
+    "project": "inner-surge-m224x"
+  },
+  "collections": [
+    {
+      "name": "custom_news",
+      "fields": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "imageUrl",
+          "type": "string"
+        },
+        {
+          "name": "date",
+          "type": "timestamp"
+        },
+        {
+          "name": "authorId",
+          "type": "string"
+        }
+      ]
+    }
+  ]
+}
