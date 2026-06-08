@@ -106,11 +106,65 @@ export default function App() {
     }
   };
 
+  const fetchClientSideNews = async (): Promise<NewsItem[]> => {
+    let combined: NewsItem[] = [];
+    
+    // 1. Hacker News
+    try {
+      const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+      if (hnRes.ok) {
+        const topIds = await hnRes.json();
+        const storyPromises = topIds.slice(0, 30).map((id: number) => 
+          fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())
+        );
+        const stories = await Promise.all(storyPromises);
+        const hnNews = stories.filter(Boolean).map((story: any) => ({
+          id: `hn-${story.id}`,
+          title: story.title,
+          source: "Hacker News",
+          date: new Date(story.time * 1000).toISOString(),
+          content: `Score: ${story.score} points by ${story.by}.`,
+          link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
+          imageUrl: undefined
+        }));
+        combined = combined.concat(hnNews);
+      }
+    } catch (e) { console.error("HN error", e); }
+
+    // 2. RSS via public rss2json API
+    const rssFeeds = [
+      "https://techcrunch.com/category/gadgets/feed/",
+      "https://www.theverge.com/rss/index.xml"
+    ];
+    for (const feed of rssFeeds) {
+      try {
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ok' && data.items) {
+            const feedNews = data.items.map((item: any) => ({
+              id: item.guid || Math.random().toString(),
+              title: item.title,
+              source: data.feed.title || "Tech Source",
+              date: item.pubDate || new Date().toISOString(),
+              content: item.description?.replace(/<[^>]+>/g, '').substring(0, 150) + "...",
+              link: item.link,
+              imageUrl: item.thumbnail || item.enclosure?.link || undefined
+            }));
+            combined = combined.concat(feedNews);
+          }
+        }
+      } catch (e) { console.error("RSS error", e); }
+    }
+    
+    return combined;
+  };
+
   const fetchUpdatedNews = async () => {
     setLoadingNews(true);
     try {
-      const [apiRes, firestoreRes] = await Promise.allSettled([
-        fetch("/api/news").then(r => r.ok ? r.json() : []),
+      // First try to resolve firestore query
+      const [firestoreRes] = await Promise.allSettled([
         getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)))
       ]);
 
@@ -132,8 +186,21 @@ export default function App() {
         allNews = allNews.concat(customNews);
       }
 
-      if (apiRes.status === "fulfilled" && Array.isArray(apiRes.value)) {
-        allNews = allNews.concat(apiRes.value);
+      // Try fetching from our backend API, fallback to client side
+      let apiNews: NewsItem[] = [];
+      try {
+        const beRes = await fetch("/api/news");
+        if (beRes.ok) {
+          apiNews = await beRes.json();
+        } else {
+          apiNews = await fetchClientSideNews();
+        }
+      } catch (err) {
+        apiNews = await fetchClientSideNews();
+      }
+
+      if (Array.isArray(apiNews) && apiNews.length > 0) {
+        allNews = allNews.concat(apiNews);
       }
 
       allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

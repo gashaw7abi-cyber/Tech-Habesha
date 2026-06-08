@@ -1,20 +1,24 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Tech Habesha
 
-# Run and deploy your AI Studio app
+Tech Habesha is a technology news aggregator built with React, Vite, Tailwind CSS, Express, and Firebase.
 
-This contains everything you need to run your app locally.
+## API Documentation
 
-View your app in AI Studio: https://ai.studio/apps/f3a6e506-dd16-4b73-ae78-b15e252a469e
+For details on the APIs, data sources, and RSS feeds used to populate the news platform, please refer to the [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) file.
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Getting Started
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Run development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Build for production:
+   ```bash
+   npm run build
+   ```
