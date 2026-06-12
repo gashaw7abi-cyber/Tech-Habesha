@@ -52,8 +52,16 @@ export default function App() {
     }
   }, []);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Handle hash links for AdSense crawlers/direct links
+    if (window.location.hash === '#privacy-policy' || window.location.hash === '#privacy') {
+      setShowPrivacyPolicy(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Record visit
@@ -543,9 +551,9 @@ export default function App() {
           </div>
           
           <div className="flex gap-6 text-sm text-slate-400">
-            <a href="#" className="hover:text-emerald-400">Privacy Policy</a>
-            <a href="#" className="hover:text-emerald-400">Terms of Service</a>
-            <a href="#" className="hover:text-emerald-400">Contact Us</a>
+            <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; setShowPrivacyPolicy(true); }} className="hover:text-emerald-400 inline-block">Privacy Policy</a>
+            <a href="mailto:gashaw7abi@gmail.com" className="hover:text-emerald-400 inline-block">Contact Us</a>
+            <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 inline-block">About Us</a>
           </div>
 
           <div className="flex gap-4">
@@ -715,6 +723,56 @@ export default function App() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Privacy Policy Modal */}
+      {showPrivacyPolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowPrivacyPolicy(false)}>
+          <div 
+            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl shadow-2xl relative flex flex-col max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-100">Privacy Policy</h3>
+              <button onClick={() => setShowPrivacyPolicy(false)} className="text-slate-400 hover:text-white transition-colors cursor-pointer bg-slate-800 p-2 rounded-full shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto w-full text-slate-300 leading-relaxed text-sm">
+              <p className="mb-4"><strong>Effective Date:</strong> {new Date().toLocaleDateString()}</p>
+              
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">1. Introduction</h4>
+              <p className="mb-4">Welcome to Tech Habesha. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website.</p>
+              
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">2. Information We Collect</h4>
+              <p className="mb-4">We do not ask for personal information unless we truly need it. We collect non-personally-identifiable information of the sort that web browsers and servers typically make available, such as the browser type, language preference, referring site, and the date and time of each visitor request.</p>
+
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">3. Google AdSense and Cookies</h4>
+              <p className="mb-2">We use Google AdSense to serve advertisements to our users. Google, as a third-party vendor, uses cookies to serve ads on our site.</p>
+              <ul className="list-disc pl-6 mb-4 space-y-2">
+                <li>Google's use of advertising cookies enables it and its partners to serve ads to our users based on their visit to our sites and/or other sites on the Internet.</li>
+                <li>Users may opt out of personalized advertising by visiting <a href="https://myadcenter.google.com/" target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline">Google's Ads Settings</a>.</li>
+                <li>Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://aboutads.info" target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline">aboutads.info</a>.</li>
+              </ul>
+              
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">4. Third-Party Links</h4>
+              <p className="mb-4">Our website may contain links to third-party websites, plug-ins, and applications. Clicking on those links or enabling those connections may allow third parties to collect or share data about you. We do not control these third-party websites and are not responsible for their privacy statements.</p>
+
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">5. Changes to this Privacy Policy</h4>
+              <p className="mb-4">We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
+
+              <h4 className="text-lg text-emerald-400 font-bold mt-6 mb-2">6. Contact Us</h4>
+              <p className="mb-4">If you have any questions about this Privacy Policy, please contact us at our official Telegram channel or via administrator email.</p>
+            </div>
+            <div className="p-4 border-t border-slate-800 bg-slate-900/50 rounded-b-2xl flex justify-end">
+              <button 
+                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors"
+                onClick={() => setShowPrivacyPolicy(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
