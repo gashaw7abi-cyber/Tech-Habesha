@@ -572,7 +572,7 @@ export default function App() {
             <a href="https://t.me/TechHabeshas_bot" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#0088cc] transition-colors cursor-pointer" title="Telegram Bot">
               <span className="flex items-center gap-1 font-medium text-xs border border-current rounded-md px-1.5 py-0.5">BOT</span>
             </a>
-            <a href="https://tiktok.com/@new_sporti" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="TikTok">
+            <a href="https://tiktok.com/@tech_habeshas" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors cursor-pointer" title="TikTok">
               {/* Custom TikTok SVG */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                 <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
