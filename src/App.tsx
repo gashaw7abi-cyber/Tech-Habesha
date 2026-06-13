@@ -53,6 +53,7 @@ export default function App() {
   }, []);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showAboutUs, setShowAboutUs] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
 
@@ -553,7 +554,7 @@ export default function App() {
           <div className="flex gap-6 text-sm text-slate-400">
             <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; setShowPrivacyPolicy(true); }} className="hover:text-emerald-400 inline-block">Privacy Policy</a>
             <a href="mailto:gashaw7abi@gmail.com" className="hover:text-emerald-400 inline-block">Contact Us</a>
-            <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 inline-block">About Us</a>
+            <a href="#about" onClick={(e) => { e.preventDefault(); window.location.hash = 'about'; setShowAboutUs(true); }} className="hover:text-emerald-400 inline-block">About Us</a>
           </div>
 
           <div className="flex gap-4">
@@ -768,11 +769,59 @@ export default function App() {
             </div>
             <div className="p-4 border-t border-slate-800 bg-slate-900/50 rounded-b-2xl flex justify-end">
               <button 
-                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors"
+                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer"
                 onClick={() => setShowPrivacyPolicy(false)}
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* About Us Modal */}
+      {showAboutUs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowAboutUs(false)}>
+          <div 
+            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl shadow-2xl relative flex flex-col max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">About Us</h3>
+              <button onClick={() => setShowAboutUs(false)} className="text-slate-400 hover:text-white transition-colors cursor-pointer bg-slate-800 p-2 rounded-full shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto w-full text-slate-300 leading-relaxed text-sm">
+              <div className="flex justify-center mb-6">
+                <img src="https://i.postimg.cc/0jNPCtMd/1780250553611.jpg" alt="Tech Habesha Logo" className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/20 shadow-lg" />
+              </div>
+              <h4 className="text-2xl text-center font-bold text-white mb-6">Tech Habesha</h4>
+              
+              <div className="space-y-4 text-base">
+                <p>Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, dedicated to empowering the Ethiopian tech ecosystem.</p>
+                
+                <p>Our mission is to bring you the latest, most relevant technological advancements, startup news, and digital trends from around the world and tailor them for our local audience. We aim to bridge the information gap and foster a thriving community of developers, innovators, tech enthusiasts, and digital creators.</p>
+                
+                <h4 className="text-lg font-bold text-emerald-400 pt-4">What We Do</h4>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><strong>News Aggregation:</strong> We curate top-tier technology news from global sources and local tech updates.</li>
+                  <li><strong>Community Building:</strong> Through our Telegram channels and social media presence, we build discussions around emerging tech.</li>
+                  <li><strong>Innovation Support:</strong> We spotlight local startups and digital initiatives, giving them the visibility they deserve.</li>
+                </ul>
+
+                <h4 className="text-lg font-bold text-emerald-400 pt-4">Our Vision</h4>
+                <p>To be the primary digital hub and source of truth for technology, computing, and digital lifestyle in Ethiopia, inspiring the next generation of African tech leaders.</p>
+
+                <div className="pt-6 border-t border-slate-800 mt-6 flex justify-center gap-4">
+                  <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-[#0088cc] hover:bg-[#0077b3] text-white font-medium rounded-lg transition-colors inline-block">
+                    Join Our Telegram
+                  </a>
+                  <a href="https://tiktok.com/@tech_habeshas" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors inline-block border border-slate-600">
+                    Follow on TikTok
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
