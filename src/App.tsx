@@ -128,7 +128,7 @@ export default function App() {
         );
         const stories = await Promise.all(storyPromises);
         const hnNews = stories.filter(Boolean).map((story: any) => ({
-          id: `hn-${story.id}`,
+          id: story.id,
           title: story.title,
           source: "Hacker News",
           date: new Date(story.time * 1000).toISOString(),
@@ -615,7 +615,7 @@ export default function App() {
               <div className="px-6 py-3 flex justify-between items-center bg-slate-900 border-b border-slate-800 shrink-0">
                 <div className="flex gap-4">
                   <span className="text-sm font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-md">
-                    {selectedNews.source}
+                    {selectedNews.source === "Engadget - Technology News & Expert Reviews" || selectedNews.source === "Engadget" || selectedNews.source === "The Verge" || selectedNews.source === "Hacker News" ? "TECH HABESHA" : selectedNews.source}
                   </span>
                   <span className="text-sm text-slate-400 py-1 font-medium">
                     {new Date(selectedNews.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -903,7 +903,7 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
       <div className="p-6 flex flex-col flex-grow">
         <div className="flex justify-between items-center mb-4">
           <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">
-            {item.source}
+            {item.source === "Engadget - Technology News & Expert Reviews" || item.source === "Engadget" || item.source === "The Verge" || item.source === "Hacker News" ? "TECH HABESHA" : item.source}
           </span>
           <span className="text-xs text-slate-500">{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
