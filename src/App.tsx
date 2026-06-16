@@ -17,7 +17,9 @@ import {
   Youtube,
   Facebook,
   Send,
-  Video
+  Video,
+  Share2,
+  Check
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
@@ -33,6 +35,51 @@ interface NewsItem {
   link: string;
   imageUrl?: string;
 }
+
+const shareContent = async (title: string, imageUrl?: string) => {
+  const shareUrl = "https://techhabesha.com.et";
+  
+  if (navigator.share) {
+    try {
+      const shareData: any = {
+        title: title,
+        text: title,
+        url: shareUrl,
+      };
+
+      let sharedAsFile = false;
+      if (imageUrl) {
+        try {
+          const response = await fetch(imageUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            const ext = blob.type.split('/')[1] || 'jpg';
+            const file = new File([blob], `image.${ext}`, { type: blob.type });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              shareData.files = [file];
+              sharedAsFile = true;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch image for sharing as file", e);
+        }
+        
+        if (!sharedAsFile) {
+          shareData.text = `${title}\n\nImage: ${imageUrl}`;
+        }
+      }
+      
+      await navigator.share(shareData);
+    } catch (err) {
+      console.error("Failed to share: ", err);
+    }
+  } else {
+    // Fallback to Telegram share
+    let telegramText = title;
+    if (imageUrl) telegramText += `\n\nImage: ${imageUrl}`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(telegramText)}`, '_blank');
+  }
+};
 
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -56,6 +103,11 @@ export default function App() {
   const [showAboutUs, setShowAboutUs] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
+
+  const handleModalShare = async () => {
+    if (!selectedNews) return;
+    await shareContent(selectedNews.title, selectedNews.imageUrl);
+  };
 
   useEffect(() => {
     // Handle hash links for AdSense crawlers/direct links
@@ -605,6 +657,13 @@ export default function App() {
                     <Trash2 className="w-5 h-5" />
                   </button>
                 )}
+                <button 
+                  onClick={handleModalShare} 
+                  className="text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer bg-slate-800 p-2 rounded-full"
+                  title="Share to social media"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
                 <button onClick={() => setSelectedNews(null)} className="text-slate-400 hover:text-white transition-colors cursor-pointer bg-slate-800 p-2 rounded-full">
                   <X className="w-5 h-5" />
                 </button>
@@ -885,6 +944,11 @@ function EventCard({ date, title, location, tags }: { date: string, title: strin
 }
 
 const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onClick }) => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await shareContent(item.title, item.imageUrl);
+  };
+
   return (
     <div 
       onClick={onClick}
@@ -910,9 +974,19 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
         <h3 className="text-lg font-bold mb-3 text-slate-100 group-hover:text-emerald-400 transition-colors line-clamp-2">
           {item.title}
         </h3>
-        <p className="text-slate-400 text-sm flex-grow line-clamp-3">
+        <p className="text-slate-400 text-sm flex-grow line-clamp-3 mb-4">
           {item.content}
         </p>
+        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-800/50">
+          <span className="text-xs font-medium text-emerald-500/80 group-hover:text-emerald-400 transition-colors">Read article</span>
+          <button 
+            onClick={handleShare}
+            className="p-2 -mr-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
+            title="Share to social media"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
