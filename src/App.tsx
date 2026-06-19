@@ -37,47 +37,58 @@ interface NewsItem {
 }
 
 const shareContent = async (title: string, imageUrl?: string) => {
-  const shareUrl = "https://techhabesha.com.et";
+  const urlToShare = "https://techhabesha.com.et";
   
   if (navigator.share) {
-    try {
-      const shareData: any = {
-        title: title,
-        text: title,
-        url: shareUrl,
-      };
+    let shareData: any = {
+      title: title,
+      text: title,
+      url: urlToShare,
+    };
 
-      let sharedAsFile = false;
-      if (imageUrl) {
-        try {
-          const response = await fetch(imageUrl);
-          if (response.ok) {
-            const blob = await response.blob();
-            const ext = blob.type.split('/')[1] || 'jpg';
-            const file = new File([blob], `image.${ext}`, { type: blob.type });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              shareData.files = [file];
-              sharedAsFile = true;
-            }
-          }
-        } catch (e) {
-          console.warn("Could not fetch image for sharing as file", e);
-        }
+    let sharedAsFile = false;
+    if (imageUrl) {
+      try {
+        const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`;
+        const controller = new AbortController();
+        // Allow slightly more time (2s max) to fetch the image to prevent user gesture timeout
+        const timeoutId = setTimeout(() => controller.abort(), 2000); 
         
-        if (!sharedAsFile) {
-          shareData.text = `${title}\n\nImage: ${imageUrl}`;
+        const response = await fetch(proxiedUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          let mimeType = blob.type;
+          if (!mimeType || mimeType === 'application/octet-stream') {
+            mimeType = 'image/jpeg';
+          }
+          const ext = mimeType.split('/')[1] || 'jpg';
+          const file = new File([blob], `photo.${ext}`, { type: mimeType });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            shareData.files = [file];
+            sharedAsFile = true;
+          }
         }
+      } catch (e) {
+        // Failed to fetch or timed out, we skip file attachment and just use text
       }
-      
+    }
+
+    try {
       await navigator.share(shareData);
-    } catch (err) {
-      console.error("Failed to share: ", err);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error("Failed to share: ", err);
+        // If it failed (e.g. user gesture expired because fetch took just enough time),
+        // we can't do much with navigator.share anymore on this click. 
+        // But we tried to limit the fetch to 1.2s to prevent this.
+      }
     }
   } else {
     // Fallback to Telegram share
-    let telegramText = title;
-    if (imageUrl) telegramText += `\n\nImage: ${imageUrl}`;
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(telegramText)}`, '_blank');
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(urlToShare)}&text=${encodeURIComponent(title)}`, '_blank');
   }
 };
 
@@ -468,7 +479,7 @@ export default function App() {
               <p>ዜናዎችን በማምጣት ላይ...</p>
             </div>
           ) : news.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-y-0 md:gap-6 -mx-4 sm:mx-0 bg-[#0d131f] md:bg-transparent">
               {news.map((item) => (
                 <NewsCard key={item.id} item={item} onClick={() => setSelectedNews(item)} />
               ))}
@@ -952,10 +963,10 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
   return (
     <div 
       onClick={onClick}
-      className="bg-slate-900/40 border border-slate-800 rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full cursor-pointer overflow-hidden"
+      className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full cursor-pointer md:overflow-hidden pb-4 md:pb-0"
     >
       {item.imageUrl && (
-        <div className="w-full h-40 bg-slate-800 overflow-hidden shrink-0">
+        <div className="w-full h-56 md:h-40 bg-slate-800 overflow-hidden shrink-0">
           <img 
             src={item.imageUrl} 
             alt={item.title} 
@@ -964,27 +975,28 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
           />
         </div>
       )}
-      <div className="p-6 flex flex-col flex-grow">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">
-            {item.source === "Engadget - Technology News & Expert Reviews" || item.source === "Engadget" || item.source === "The Verge" || item.source === "Hacker News" ? "TECH HABESHA" : item.source}
+      <div className="p-4 md:p-6 flex flex-col flex-grow">
+        <div className="flex mb-4">
+          <span className="text-xs font-bold text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded-full tracking-wider">
+            {item.source === "Engadget - Technology News & Expert Reviews" || item.source === "Engadget" || item.source === "The Verge" || item.source === "Hacker News" || item.source === "TechCrunch" ? "TECH HABESHA" : item.source.toUpperCase()}
           </span>
-          <span className="text-xs text-slate-500">{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
-        <h3 className="text-lg font-bold mb-3 text-slate-100 group-hover:text-emerald-400 transition-colors line-clamp-2">
+        <h3 className="text-xl md:text-xl font-bold md:mb-3 text-slate-100 group-hover:text-emerald-400 transition-colors leading-snug">
           {item.title}
         </h3>
-        <p className="text-slate-400 text-sm flex-grow line-clamp-3 mb-4">
+        <p className="text-slate-400 text-sm md:text-base flex-grow line-clamp-3 mb-6 mt-4 md:mt-0 leading-relaxed">
           {item.content}
         </p>
-        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-800/50">
-          <span className="text-xs font-medium text-emerald-500/80 group-hover:text-emerald-400 transition-colors">Read article</span>
+        <div className="flex justify-between items-center mt-auto md:pt-4">
+          <span className="text-sm font-semibold text-slate-500">
+            {new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </span>
           <button 
             onClick={handleShare}
-            className="p-2 -mr-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
+            className="p-3 bg-slate-800/60 md:bg-slate-800/40 border border-slate-700/50 rounded-full hover:bg-slate-700 md:hover:bg-slate-800 text-slate-300 md:text-slate-400 hover:text-emerald-400 transition-colors"
             title="Share to social media"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-5 h-5" />
           </button>
         </div>
       </div>
