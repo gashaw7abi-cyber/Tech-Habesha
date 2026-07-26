@@ -19,7 +19,8 @@ import {
   Send,
   Video,
   Share2,
-  Check
+  Check,
+  Download
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
@@ -365,9 +366,6 @@ export default function App() {
                   Admin Login
                 </button>
               )}
-              <button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-5 py-2 rounded-full font-medium transition-all transform hover:scale-105 cursor-pointer ml-2">
-                Join Community
-              </button>
             </div>
 
             <div className="md:hidden">
@@ -405,9 +403,12 @@ export default function App() {
                     </button>
                   </>
                 )}
-                <button className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3">
-                  Join Community
-                </button>
+                <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="w-full bg-[#2AABEE] hover:bg-[#229ED9] text-white px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
+                  <Send className="w-4 h-4" /> Join Telegram
+                </a>
+                <a href="https://www.dropbox.com/scl/fi/uvxl0rxv9aqps5zfuue3s/app.apk?rlkey=ng8hikz1f306d5caxw4427g51&st=w0avzrl5&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
+                  <Download className="w-4 h-4" /> Download App
+                </a>
                 {user ? (
                    <button onClick={handleLogout} className="w-full text-center text-slate-400 py-2">Logout</button>
                 ) : (
