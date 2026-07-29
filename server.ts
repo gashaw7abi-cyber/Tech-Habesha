@@ -48,7 +48,7 @@ async function startServer() {
             let cleanDesc = item.contentSnippet || "";
             if (!cleanDesc && (item.description || item['content:encoded'] || item.content)) {
                const rawDesc = item.description || item['content:encoded'] || item.content || "";
-               cleanDesc = rawDesc.replace(/<[^>]+>/g, '').substring(0, 150) + "...";
+               cleanDesc = rawDesc.replace(/<[^>]+>/g, '').trim();
             }
 
             return {
@@ -90,7 +90,7 @@ async function startServer() {
             title: story.title,
             source: "Hacker News",
             date: new Date(story.time * 1000).toISOString(),
-            content: `Score: ${story.score} points by ${story.by}.`,
+            content: "",
             link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
             imageUrl: null // No image for Hacker News
           }));

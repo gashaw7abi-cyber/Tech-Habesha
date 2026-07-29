@@ -20,7 +20,8 @@ import {
   Video,
   Share2,
   Check,
-  Download
+  Download,
+  ExternalLink
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
@@ -196,7 +197,7 @@ export default function App() {
           title: story.title,
           source: "Hacker News",
           date: new Date(story.time * 1000).toISOString(),
-          content: `Score: ${story.score} points by ${story.by}.`,
+          content: "",
           link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
           imageUrl: undefined
         }));
@@ -220,7 +221,7 @@ export default function App() {
               title: item.title,
               source: data.feed.title || "Tech Source",
               date: item.pubDate || new Date().toISOString(),
-              content: item.description?.replace(/<[^>]+>/g, '').substring(0, 150) + "...",
+              content: item.description?.replace(/<[^>]+>/g, '').trim(),
               link: item.link,
               imageUrl: item.thumbnail || item.enclosure?.link || undefined
             }));
@@ -692,23 +693,14 @@ export default function App() {
                     {new Date(selectedNews.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
-                <div className="text-xs text-slate-500 hidden md:block">{selectedNews.content}</div>
+                
               </div>
 
-              {selectedNews.link ? (
-                <div className="w-full h-full flex-grow relative bg-slate-200 overflow-hidden rounded-b-2xl">
-                  <iframe 
-                    src={selectedNews.link} 
-                    className="w-full h-full border-none absolute inset-0 bg-white" 
-                    title={selectedNews.title}
-                    sandbox="allow-same-origin allow-scripts allow-popups"
-                  />
-                </div>
-              ) : (
-                <div className="p-8 text-slate-300 text-lg leading-relaxed whitespace-pre-wrap overflow-y-auto">
+              <div className="p-6 md:p-8 flex flex-col flex-grow bg-slate-950 overflow-y-auto rounded-b-2xl">
+                <div className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap flex-grow">
                   {selectedNews.content}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -985,7 +977,7 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
         <h3 className="text-xl md:text-xl font-bold md:mb-3 text-slate-100 group-hover:text-emerald-400 transition-colors leading-snug">
           {item.title}
         </h3>
-        <p className="text-slate-400 text-sm md:text-base flex-grow line-clamp-3 mb-6 mt-4 md:mt-0 leading-relaxed">
+        <p className="text-slate-400 text-sm md:text-base flex-grow line-clamp-[12] mb-6 mt-4 md:mt-0 leading-relaxed whitespace-pre-line">
           {item.content}
         </p>
         <div className="flex justify-between items-center mt-auto md:pt-4">
