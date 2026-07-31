@@ -325,7 +325,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <img src="https://i.postimg.cc/0jNPCtMd/1780250553611.jpg" alt="Tech Habesha Logo" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
+              <img src="https://i.postimg.cc/RhgprB7d/file-0000000087f082438bf30653fc9efd0d.png" alt="Tech Habesha Logo" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
               <span className="font-bold text-xl tracking-tight">TECH <span className="text-emerald-500">HABESHA</span></span>
             </div>
             
@@ -612,7 +612,7 @@ export default function App() {
       <footer className="bg-slate-950 border-t border-slate-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <img src="https://i.postimg.cc/0jNPCtMd/1780250553611.jpg" alt="Tech Habesha Logo" className="w-8 h-8 rounded-full object-cover border border-slate-800" />
+            <img src="https://i.postimg.cc/RhgprB7d/file-0000000087f082438bf30653fc9efd0d.png" alt="Tech Habesha Logo" className="w-8 h-8 rounded-full object-cover border border-slate-800" />
             <span className="font-bold tracking-tight">TECH <span className="text-emerald-500">HABESHA</span></span>
           </div>
           
@@ -857,7 +857,7 @@ export default function App() {
             </div>
             <div className="p-8 overflow-y-auto w-full text-slate-300 leading-relaxed text-sm">
               <div className="flex justify-center mb-6">
-                <img src="https://i.postimg.cc/0jNPCtMd/1780250553611.jpg" alt="Tech Habesha Logo" className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/20 shadow-lg" />
+                <img src="https://i.postimg.cc/RhgprB7d/file-0000000087f082438bf30653fc9efd0d.png" alt="Tech Habesha Logo" className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/20 shadow-lg" />
               </div>
               <h4 className="text-2xl text-center font-bold text-white mb-6">Tech Habesha</h4>
               
