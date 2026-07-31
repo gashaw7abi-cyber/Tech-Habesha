@@ -407,7 +407,7 @@ export default function App() {
                 <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="w-full bg-[#2AABEE] hover:bg-[#229ED9] text-white px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
                   <Send className="w-4 h-4" /> Join Telegram
                 </a>
-                <a href="https://www.dropbox.com/scl/fi/uvxl0rxv9aqps5zfuue3s/app.apk?rlkey=ng8hikz1f306d5caxw4427g51&st=w0avzrl5&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
+                <a href="https://www.dropbox.com/scl/fi/jfij71rhithrgzajk5lo2/app.apk?rlkey=uhvlhpezd01xyapl228oh4klm&st=vb5k7pfc&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
                   <Download className="w-4 h-4" /> Download App
                 </a>
                 {user ? (
