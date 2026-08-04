@@ -955,8 +955,7 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
 
   return (
     <div 
-      onClick={onClick}
-      className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full cursor-pointer md:overflow-hidden pb-4 md:pb-0"
+      className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full md:overflow-hidden pb-4 md:pb-0"
     >
       {item.imageUrl && (
         <div className="w-full h-56 md:h-40 bg-slate-800 overflow-hidden shrink-0">
@@ -977,7 +976,7 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
         <h3 className="text-xl md:text-xl font-bold md:mb-3 text-slate-100 group-hover:text-emerald-400 transition-colors leading-snug">
           {item.title}
         </h3>
-        <p className="text-slate-400 text-sm md:text-base flex-grow line-clamp-[12] mb-6 mt-4 md:mt-0 leading-relaxed whitespace-pre-line">
+        <p className="text-slate-400 text-sm md:text-base flex-grow mb-6 mt-4 md:mt-0 leading-relaxed whitespace-pre-line">
           {item.content}
         </p>
         <div className="flex justify-between items-center mt-auto md:pt-4">
