@@ -114,6 +114,7 @@ export default function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showAboutUs, setShowAboutUs] = useState(false);
+  const [showAppPromo, setShowAppPromo] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
 
@@ -128,6 +129,18 @@ export default function App() {
       setShowPrivacyPolicy(true);
     }
   }, []);
+
+  useEffect(() => {
+    const hasDismissed = sessionStorage.getItem('appPromoDismissed');
+    if (!hasDismissed) {
+      setShowAppPromo(true);
+    }
+  }, []);
+
+  const dismissPromo = () => {
+    setShowAppPromo(false);
+    sessionStorage.setItem('appPromoDismissed', 'true');
+  };
 
   useEffect(() => {
     // Record visit
@@ -155,7 +168,7 @@ export default function App() {
             setVisits(docSnap.data().count);
           }
         } catch (error) {
-          console.error("Failed to fetch visits:", error);
+          console.warn("Failed to fetch visits:", error);
         }
       }
       fetchVisits();
@@ -203,7 +216,7 @@ export default function App() {
         }));
         combined = combined.concat(hnNews);
       }
-    } catch (e) { console.error("HN error", e); }
+    } catch (e) { console.warn("HN fetch failed:", e); }
 
     // 2. RSS via public rss2json API
     const rssFeeds = [
@@ -228,7 +241,7 @@ export default function App() {
             combined = combined.concat(feedNews);
           }
         }
-      } catch (e) { console.error("RSS error", e); }
+      } catch (e) { console.warn("RSS fetch failed:", e); }
     }
     
     return combined;
@@ -320,8 +333,39 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-emerald-500/30">
+      {/* App Promo Banner */}
+      {showAppPromo && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0f1523] border-b border-slate-800 px-3 py-2 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={dismissPromo}
+              className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-700">
+              <img src="https://i.postimg.cc/RhgprB7d/file-0000000087f082438bf30653fc9efd0d.png" alt="Tech Habesha" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-100 text-[15px] leading-tight">Tech Habesha</span>
+              <div className="flex text-emerald-500 text-[10px] mt-0.5">
+                {'★'.repeat(5)}
+              </div>
+            </div>
+          </div>
+          <a 
+            href="https://www.dropbox.com/scl/fi/5837no93zibig0dobfd0f/app.apk?rlkey=to61dxjsmt18elbhcdzej43nq&st=hz8b1bjg&dl=1" 
+            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+            onClick={dismissPromo}
+          >
+            DOWNLOAD
+            <Download className="w-4 h-4" />
+          </a>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+      <nav className={`fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 transition-all duration-300 ${showAppPromo ? 'top-[56px]' : 'top-0'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -407,7 +451,7 @@ export default function App() {
                 <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="w-full bg-[#2AABEE] hover:bg-[#229ED9] text-white px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
                   <Send className="w-4 h-4" /> Join Telegram
                 </a>
-                <a href="https://www.dropbox.com/scl/fi/ib4akzm15rpe8y4lll3h4/app.apk?rlkey=lbd3s98pny0ta4i3643low6ed&st=5j7ipxop&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
+                <a href="https://www.dropbox.com/scl/fi/5837no93zibig0dobfd0f/app.apk?rlkey=to61dxjsmt18elbhcdzej43nq&st=hz8b1bjg&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
                   <Download className="w-4 h-4" /> Download App
                 </a>
                 {user ? (
@@ -422,7 +466,7 @@ export default function App() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section className={`transition-all duration-300 ${showAppPromo ? 'pt-[130px]' : 'pt-24'} pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center`}>
         <motion.div
           initial="initial"
           animate="animate"
@@ -889,6 +933,7 @@ export default function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
