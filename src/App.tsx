@@ -38,13 +38,16 @@ interface NewsItem {
   imageUrl?: string;
 }
 
-const shareContent = async (title: string, imageUrl?: string) => {
+const shareContent = async (title: string, content?: string, imageUrl?: string) => {
   const urlToShare = "https://techhabesha.com.et";
   
+  const contentText = content ? content.split('\n').slice(0, 12).join('\n') + '\n\n' : '';
+  const shareText = `${title}\n\n${contentText}Download Tech Habesha App: https://www.techhabesha.com.et/`;
+
   if (navigator.share) {
     let shareData: any = {
       title: title,
-      text: title,
+      text: shareText,
       url: urlToShare,
     };
 
@@ -90,7 +93,7 @@ const shareContent = async (title: string, imageUrl?: string) => {
     }
   } else {
     // Fallback to Telegram share
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(urlToShare)}&text=${encodeURIComponent(title)}`, '_blank');
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(urlToShare)}&text=${encodeURIComponent(shareText)}`, '_blank');
   }
 };
 
@@ -120,7 +123,7 @@ export default function App() {
 
   const handleModalShare = async () => {
     if (!selectedNews) return;
-    await shareContent(selectedNews.title, selectedNews.imageUrl);
+    await shareContent(selectedNews.title, selectedNews.content, selectedNews.imageUrl);
   };
 
   useEffect(() => {
@@ -995,7 +998,7 @@ function EventCard({ date, title, location, tags }: { date: string, title: strin
 const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onClick }) => {
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await shareContent(item.title, item.imageUrl);
+    await shareContent(item.title, item.content, item.imageUrl);
   };
 
   return (
