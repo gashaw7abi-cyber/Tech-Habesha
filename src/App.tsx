@@ -21,7 +21,8 @@ import {
   Share2,
   Check,
   Download,
-  ExternalLink
+  ExternalLink,
+  Mail
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
@@ -117,9 +118,11 @@ export default function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showAboutUs, setShowAboutUs] = useState(false);
+  const [showContactUs, setShowContactUs] = useState(false);
   const [showAppPromo, setShowAppPromo] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
+  const [dailyVisits, setDailyVisits] = useState<number | null>(null);
 
   const handleModalShare = async () => {
     if (!selectedNews) return;
@@ -130,6 +133,12 @@ export default function App() {
     // Handle hash links for AdSense crawlers/direct links
     if (window.location.hash === '#privacy-policy' || window.location.hash === '#privacy') {
       setShowPrivacyPolicy(true);
+    }
+    if (window.location.hash === '#about') {
+      setShowAboutUs(true);
+    }
+    if (window.location.hash === '#contact') {
+      setShowContactUs(true);
     }
   }, []);
 
@@ -148,15 +157,27 @@ export default function App() {
   useEffect(() => {
     // Record visit
     const recordVisit = async () => {
-      if (!localStorage.getItem('hasVisited')) {
-        try {
+      const todayDate = new Date().toISOString().split('T')[0];
+      const lastVisitDate = localStorage.getItem('lastVisitDate');
+      const hasVisitedBefore = localStorage.getItem('hasVisited');
+
+      try {
+        if (!hasVisitedBefore) {
           await setDoc(doc(db, "stats", "visits"), {
             count: increment(1)
           }, { merge: true });
           localStorage.setItem('hasVisited', 'true');
-        } catch (error) {
-          console.error("Failed to record visit:", error);
         }
+
+        if (lastVisitDate !== todayDate) {
+          // Increment daily visit
+          await setDoc(doc(db, "stats", `daily_visits_${todayDate}`), {
+            count: increment(1)
+          }, { merge: true });
+          localStorage.setItem('lastVisitDate', todayDate);
+        }
+      } catch (error) {
+        console.error("Failed to record visit:", error);
       }
     };
     recordVisit();
@@ -169,6 +190,14 @@ export default function App() {
           const docSnap = await getDoc(doc(db, "stats", "visits"));
           if (docSnap.exists()) {
             setVisits(docSnap.data().count);
+          }
+
+          const todayDate = new Date().toISOString().split('T')[0];
+          const dailyDocSnap = await getDoc(doc(db, "stats", `daily_visits_${todayDate}`));
+          if (dailyDocSnap.exists()) {
+            setDailyVisits(dailyDocSnap.data().count);
+          } else {
+            setDailyVisits(0);
           }
         } catch (error) {
           console.warn("Failed to fetch visits:", error);
@@ -387,9 +416,16 @@ export default function App() {
             <div className="hidden md:flex items-center gap-4">
               {isAdmin && (
                 <>
-                  <div className="text-slate-400 text-sm flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {visits !== null ? `${visits} Visits` : '...'}
+                  <div className="text-slate-400 text-sm flex items-center gap-3 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+                    <div className="flex items-center gap-1.5" title="Total Visits">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      {visits !== null ? visits : '...'} Total
+                    </div>
+                    <div className="w-px h-3 bg-slate-700"></div>
+                    <div className="flex items-center gap-1.5" title="Today's Visits">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                      {dailyVisits !== null ? dailyVisits : '...'} Today
+                    </div>
                   </div>
                   <button 
                     onClick={() => setShowAdminModal(true)}
@@ -438,9 +474,16 @@ export default function App() {
                 {isAdmin && (
                   <>
                     <div className="flex justify-center mb-3">
-                      <div className="text-slate-400 text-sm flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        {visits !== null ? `${visits} Visits` : '...'}
+                      <div className="text-slate-400 text-sm flex items-center gap-3 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          {visits !== null ? visits : '...'} Total
+                        </div>
+                        <div className="w-px h-3 bg-slate-700"></div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                          {dailyVisits !== null ? dailyVisits : '...'} Today
+                        </div>
                       </div>
                     </div>
                     <button 
@@ -665,7 +708,7 @@ export default function App() {
           
           <div className="flex gap-6 text-sm text-slate-400">
             <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; setShowPrivacyPolicy(true); }} className="hover:text-emerald-400 inline-block">Privacy Policy</a>
-            <a href="mailto:gashaw7abi@gmail.com" className="hover:text-emerald-400 inline-block">Contact Us</a>
+            <a href="#contact" onClick={(e) => { e.preventDefault(); window.location.hash = 'contact'; setShowContactUs(true); }} className="hover:text-emerald-400 inline-block">Contact Us</a>
             <a href="#about" onClick={(e) => { e.preventDefault(); window.location.hash = 'about'; setShowAboutUs(true); }} className="hover:text-emerald-400 inline-block">About Us</a>
           </div>
 
@@ -931,6 +974,70 @@ export default function App() {
                     Follow on TikTok
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Us Modal */}
+      {showContactUs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowContactUs(false)}>
+          <div 
+            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl relative flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">Contact Us</h3>
+              <button onClick={() => setShowContactUs(false)} className="text-slate-400 hover:text-white transition-colors cursor-pointer bg-slate-800 p-2 rounded-full shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-8 text-slate-300 leading-relaxed text-sm space-y-6">
+              <div className="flex justify-center mb-2">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/50">
+                  <Mail className="w-8 h-8 text-emerald-400" />
+                </div>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <h4 className="text-lg font-bold text-white">Get in Touch</h4>
+                <p className="text-slate-400">Have questions, feedback, or business inquiries? We'd love to hear from you!</p>
+              </div>
+
+              <div className="space-y-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Email Us</div>
+                    <a href="mailto:gashaw7abi@gmail.com" className="text-sm font-medium text-slate-200 hover:text-emerald-400 transition-colors">gashaw7abi@gmail.com</a>
+                  </div>
+                </div>
+                
+                <div className="h-px bg-slate-800 w-full"></div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
+                    <Send className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Telegram</div>
+                    <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-200 hover:text-blue-400 transition-colors">@TechHabeshas</a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <a 
+                  href="mailto:gashaw7abi@gmail.com" 
+                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg transition-colors inline-flex items-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  Send an Email
+                </a>
               </div>
             </div>
           </div>
