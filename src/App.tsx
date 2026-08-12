@@ -55,15 +55,22 @@ const shareContent = async (title: string, content?: string, imageUrl?: string) 
     let sharedAsFile = false;
     if (imageUrl) {
       try {
-        const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`;
         const controller = new AbortController();
-        // Allow slightly more time (2s max) to fetch the image to prevent user gesture timeout
-        const timeoutId = setTimeout(() => controller.abort(), 2000); 
+        // Allow slightly more time (2.5s max) to fetch the image to prevent user gesture timeout
+        const timeoutId = setTimeout(() => controller.abort(), 2500); 
         
-        const response = await fetch(proxiedUrl, { signal: controller.signal });
+        // Try direct fetch first (works for postimg and CORS-enabled hosts)
+        let response = await fetch(imageUrl, { signal: controller.signal }).catch(() => null);
+        
+        // Fallback to allorigins proxy if direct fetch fails (wsrv.nl blocks some domains)
+        if (!response || !response.ok) {
+          const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+          response = await fetch(proxiedUrl, { signal: controller.signal });
+        }
+        
         clearTimeout(timeoutId);
         
-        if (response.ok) {
+        if (response && response.ok) {
           const blob = await response.blob();
           let mimeType = blob.type;
           if (!mimeType || mimeType === 'application/octet-stream') {
@@ -74,6 +81,10 @@ const shareContent = async (title: string, content?: string, imageUrl?: string) 
           
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             shareData.files = [file];
+            // Remove the top-level URL to force native share sheets (especially Android) to share the file,
+            // otherwise they often create a link preview and ignore the image completely.
+            // The URL is already included in the `shareText`.
+            delete shareData.url;
             sharedAsFile = true;
           }
         }
