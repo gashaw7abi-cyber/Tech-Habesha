@@ -37,6 +37,7 @@ interface NewsItem {
   content: string;
   link: string;
   imageUrl?: string;
+  metaDescription?: string;
 }
 
 const shareContent = async (title: string, content?: string, imageUrl?: string) => {
@@ -139,6 +140,22 @@ export default function App() {
     if (!selectedNews) return;
     await shareContent(selectedNews.title, selectedNews.content, selectedNews.imageUrl);
   };
+
+  useEffect(() => {
+    if (selectedNews) {
+      document.title = `${selectedNews.title} | Tech Habesha`;
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', selectedNews.metaDescription || selectedNews.content.slice(0, 155) + '...');
+      }
+    } else {
+      document.title = "Tech Habesha";
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', "Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.");
+      }
+    }
+  }, [selectedNews]);
 
   useEffect(() => {
     // Handle hash links for AdSense crawlers/direct links
@@ -831,6 +848,7 @@ export default function App() {
                   const source = (form.elements.namedItem("source") as HTMLInputElement).value;
                   const link = (form.elements.namedItem("link") as HTMLInputElement).value;
                   const imageUrl = (form.elements.namedItem("imageUrl") as HTMLInputElement).value;
+                  const metaDescription = (form.elements.namedItem("metaDescription") as HTMLTextAreaElement).value;
                   
                   try {
                     await addDoc(collection(db, "custom_news"), {
@@ -839,6 +857,7 @@ export default function App() {
                       source,
                       link,
                       imageUrl: imageUrl || null,
+                      metaDescription: metaDescription || null,
                       date: serverTimestamp(),
                       authorId: user?.uid
                     });
@@ -877,6 +896,24 @@ export default function App() {
                     <ImageIcon className="absolute left-3 top-2.5 w-5 h-5 text-slate-500" />
                     <input type="url" name="imageUrl" placeholder="https://" className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-slate-200 focus:outline-none focus:border-emerald-500" />
                   </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-slate-400">Meta Description (SEO)</label>
+                    <span id="meta-counter" className="text-xs text-slate-500">0 / 160</span>
+                  </div>
+                  <textarea 
+                    name="metaDescription" 
+                    rows={2} 
+                    maxLength={160}
+                    onInput={(e) => {
+                      const counter = document.getElementById('meta-counter');
+                      if (counter) counter.innerText = `${(e.target as HTMLTextAreaElement).value.length} / 160`;
+                    }}
+                    placeholder="Short description for Google Search results..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  ></textarea>
                 </div>
                 
                 <div className="pt-4 flex justify-end gap-3">
