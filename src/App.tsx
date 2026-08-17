@@ -28,6 +28,7 @@ import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
+import techLogo from "./assets/tech-logo.png";
 
 interface NewsItem {
   id: string | number;
@@ -408,7 +409,7 @@ export default function App() {
               <X className="w-5 h-5" />
             </button>
             <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-700">
-              <img src="/tech-logo.png" alt="Tech Habesha" className="w-full h-full object-cover" />
+              <img src={techLogo} alt="Tech Habesha" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-slate-100 text-[15px] leading-tight">Tech Habesha</span>
@@ -433,7 +434,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <img src="/tech-logo.png" alt="Tech Habesha Logo" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
+              <img src={techLogo} alt="Tech Habesha Logo" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
               <span className="font-bold text-xl tracking-tight">TECH <span className="text-emerald-500">HABESHA</span></span>
             </div>
             
@@ -734,7 +735,7 @@ export default function App() {
       <footer className="bg-slate-950 border-t border-slate-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <img src="/tech-logo.png" alt="Tech Habesha Logo" className="w-8 h-8 rounded-full object-cover border border-slate-800" />
+            <img src={techLogo} alt="Tech Habesha Logo" className="w-8 h-8 rounded-full object-cover border border-slate-800" />
             <span className="font-bold tracking-tight">TECH <span className="text-emerald-500">HABESHA</span></span>
           </div>
           
@@ -1049,7 +1050,7 @@ export default function App() {
             </div>
             <div className="p-8 overflow-y-auto w-full text-slate-300 leading-relaxed text-sm">
               <div className="flex justify-center mb-6">
-                <img src="/tech-logo.png" alt="Tech Habesha Logo" className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/20 shadow-lg" />
+                <img src={techLogo} alt="Tech Habesha Logo" className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/20 shadow-lg" />
               </div>
               <h4 className="text-2xl text-center font-bold text-white mb-6">Tech Habesha</h4>
               
