@@ -28,7 +28,7 @@ import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
-const techLogo = "/logo-main.png";
+const techLogo = "https://i.postimg.cc/RhgprB7d/file-0000000087f082438bf30653fc9efd0d.png";
 
 interface NewsItem {
   id: string | number;
@@ -263,12 +263,20 @@ export default function App() {
     
     // 1. Hacker News
     try {
-      const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (hnRes.ok) {
         const topIds = await hnRes.json();
-        const storyPromises = topIds.slice(0, 30).map((id: number) => 
-          fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())
-        );
+        const storyPromises = topIds.slice(0, 30).map((id: number) => {
+          const itemController = new AbortController();
+          const itemTimeout = setTimeout(() => itemController.abort(), 8000);
+          return fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: itemController.signal })
+            .then(r => r.json())
+            .finally(() => clearTimeout(itemTimeout));
+        });
         const stories = await Promise.all(storyPromises);
         const hnNews = stories.filter(Boolean).map((story: any) => ({
           id: story.id,
@@ -288,9 +296,14 @@ export default function App() {
       "https://techcrunch.com/category/gadgets/feed/",
       "https://www.theverge.com/rss/index.xml"
     ];
+
     for (const feed of rssFeeds) {
       try {
-        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (res.ok) {
           const data = await res.json();
           if (data.status === 'ok' && data.items) {
@@ -315,15 +328,20 @@ export default function App() {
   const fetchUpdatedNews = async () => {
     setLoadingNews(true);
     try {
-      // First try to resolve firestore query
-      const [firestoreRes] = await Promise.allSettled([
-        getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)))
-      ]);
+      // First try to resolve firestore query with a 5 second timeout
+      let firestoreRes;
+      try {
+        const firestorePromise = getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 5000));
+        firestoreRes = await Promise.race([firestorePromise, timeoutPromise]) as any;
+      } catch (err) {
+        console.warn("Firestore fetch error or timeout:", err);
+      }
 
       let allNews: NewsItem[] = [];
 
-      if (firestoreRes.status === "fulfilled") {
-        const customNews = firestoreRes.value.docs.map(doc => {
+      if (firestoreRes && firestoreRes.docs) {
+        const customNews = firestoreRes.docs.map((doc: any) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -341,13 +359,18 @@ export default function App() {
       // Try fetching from our backend API, fallback to client side
       let apiNews: NewsItem[] = [];
       try {
-        const beRes = await fetch("/api/news");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const beRes = await fetch("/api/news", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (beRes.ok) {
           apiNews = await beRes.json();
         } else {
           apiNews = await fetchClientSideNews();
         }
       } catch (err) {
+        console.warn("Backend fetch failed, falling back to client-side:", err);
         apiNews = await fetchClientSideNews();
       }
 
