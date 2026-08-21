@@ -28,7 +28,7 @@ import React, { useState, useEffect } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
-const techLogo = "/logo-circular.png";
+import { techLogo } from "./logo";
 
 interface NewsItem {
   id: string | number;

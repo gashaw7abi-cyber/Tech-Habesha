@@ -3,18 +3,18 @@
   "name": "Tech Habesha",
   "icons": [
     {
-      "src": "https://techhabesha.com.et/logo-circular.png",
-      "type": "image/png",
+      "src": "/logo-circular.svg",
+      "type": "image/svg+xml",
       "sizes": "48x48"
     },
     {
-      "src": "https://techhabesha.com.et/logo-circular.png",
-      "type": "image/png",
+      "src": "/logo-circular.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
     },
     {
-      "src": "https://techhabesha.com.et/logo-circular.png",
-      "type": "image/png",
+      "src": "/logo-circular.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512"
     }
   ],
