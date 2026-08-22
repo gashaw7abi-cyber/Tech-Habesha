@@ -508,8 +508,12 @@ export default function App() {
               )}
             </div>
 
-            <div className="md:hidden">
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-300 hover:text-white cursor-pointer">
+            <div className="flex md:hidden items-center justify-end flex-shrink-0 z-[60] ml-auto">
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                className="text-slate-200 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 cursor-pointer transition-all active:scale-95"
+                aria-label="Toggle menu"
+              >
                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
