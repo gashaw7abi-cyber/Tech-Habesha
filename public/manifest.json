@@ -3,18 +3,18 @@
   "name": "Tech Habesha",
   "icons": [
     {
-      "src": "/logo-circular.svg",
-      "type": "image/svg+xml",
+      "src": "/favicon-192.png",
+      "type": "image/png",
       "sizes": "48x48"
     },
     {
-      "src": "/logo-circular.svg",
-      "type": "image/svg+xml",
+      "src": "/favicon-192.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/logo-circular.svg",
-      "type": "image/svg+xml",
+      "src": "/favicon-192.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ],
