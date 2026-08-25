@@ -14,11 +14,10 @@
     </script>
     
     <!-- Favicon and Touch Icons -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" href="/favicon-192.png" />
-    <link rel="icon" type="image/png" href="/favicon-192.png" sizes="48x48" />
-    <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192" />
-    <link rel="apple-touch-icon" href="/favicon-192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
     <link rel="manifest" href="/manifest.json" />
     
     <!-- Open Graph / SEO Meta Tags -->
@@ -50,7 +49,24 @@
     </script>
 
     <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1052173421990358" crossorigin="anonymous" onerror="event.preventDefault(); event.stopImmediatePropagation();"></script>
+    <!-- Google AdSense (Loads only in browsers, not in Apps) -->
+    <script>
+      (function() {
+        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        var isWebView = /(wv|Version\/[\d\.]+.*Chrome\/[0-9]{2,}\.)/i.test(userAgent) || (userAgent.indexOf('Android') > -1 && userAgent.indexOf('wv') > -1) || /(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(userAgent);
+        
+        // Prevent AdSense from loading inside the Android App (WebView) to protect account
+        if (!isWebView) {
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1052173421990358";
+          script.crossOrigin = "anonymous";
+          document.head.appendChild(script);
+        } else {
+          console.log("App WebView detected. AdSense blocked.");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
