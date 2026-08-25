@@ -41,6 +41,32 @@ interface NewsItem {
   metaDescription?: string;
 }
 
+const parseLinks = (text: string) => {
+  if (!text) return text;
+  // Matches URLs with http/https, www, or simple domain names (e.g., techhabesha.com)
+  const urlRegex = /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_+.~#?&//=]*))/gi;
+  
+  return text.split(urlRegex).map((part, index) => {
+    if (part && part.match(urlRegex)) {
+      // Ensure the URL has http/https for the link tag
+      const href = part.match(/^(https?:\/\/)/i) ? part : `https://${part}`;
+      return (
+        <a 
+          key={index} 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 const shareContent = async (title: string, content?: string, imageUrl?: string) => {
   const urlToShare = "https://techhabesha.com.et";
   
@@ -849,7 +875,7 @@ export default function App() {
 
               <div className="p-6 md:p-8 flex flex-col flex-grow bg-slate-950 overflow-y-auto rounded-b-2xl">
                 <div className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap flex-grow">
-                  {selectedNews.content}
+                  {parseLinks(selectedNews.content)}
                 </div>
               </div>
             </div>
@@ -1262,7 +1288,7 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
           {item.title}
         </h3>
         <p className="text-slate-400 text-sm md:text-base flex-grow mb-6 mt-4 md:mt-0 leading-relaxed whitespace-pre-line">
-          {item.content}
+          {parseLinks(item.content)}
         </p>
         <div className="flex justify-between items-center mt-auto md:pt-4">
           <span className="text-sm font-semibold text-slate-500">
