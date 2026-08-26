@@ -3,23 +3,23 @@
   "name": "Tech Habesha",
   "icons": [
     {
-      "src": "/favicon-192.png",
+      "src": "/favicon-48.png",
       "type": "image/png",
       "sizes": "48x48"
+    },
+    {
+      "src": "/favicon-96.png",
+      "type": "image/png",
+      "sizes": "96x96"
     },
     {
       "src": "/favicon-192.png",
       "type": "image/png",
       "sizes": "192x192"
-    },
-    {
-      "src": "/favicon-192.png",
-      "type": "image/png",
-      "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  "theme_color": "#020617",
+  "background_color": "#020617"
 }
