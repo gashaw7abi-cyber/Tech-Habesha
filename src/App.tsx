@@ -43,8 +43,8 @@ interface NewsItem {
 
 const parseLinks = (text: string) => {
   if (!text) return text;
-  // Matches URLs with http/https, www, or simple domain names (e.g., techhabesha.com)
-  const urlRegex = /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_+.~#?&//=]*))/gi;
+  // Matches URLs with http/https, www, or simple domain names (e.g., techhabesha.com, t.me)
+  const urlRegex = /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-z]{2,10}\b(?:[-a-zA-Z0-9@:%_+.~#?&//=]*))/gi;
   
   return text.split(urlRegex).map((part, index) => {
     if (part && part.match(urlRegex)) {
