@@ -41,13 +41,32 @@ interface NewsItem {
   metaDescription?: string;
 }
 
+const isCleanNewsItem = (item: any): boolean => {
+  if (!item || !item.title) return false;
+  const content = String(item.content || "");
+  const title = String(item.title || "");
+  const source = String(item.source || "");
+  const id = String(item.id || "");
+  
+  // Reject Hacker News and score/points snippets completely
+  if (source === "Hacker News") return false;
+  if (id.startsWith("hn-")) return false;
+  if (/Score:\s*\d+\s*points/i.test(content) || /Score:\s*\d+\s*points/i.test(title)) return false;
+  if (/points\s+by\s+[a-zA-Z0-9_-]+/i.test(content)) return false;
+  return true;
+};
+
 const getCachedNews = (): NewsItem[] => {
   try {
-    const cached = localStorage.getItem('cached_tech_news_v2') || localStorage.getItem('cached_tech_news_v1');
+    // Thoroughly purge old legacy keys that contained Hacker News
+    localStorage.removeItem('cached_tech_news_v1');
+    localStorage.removeItem('cached_tech_news_v2');
+
+    const cached = localStorage.getItem('cached_tech_news_v3');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.filter((item: NewsItem) => item.source !== 'Hacker News');
+        return parsed.filter(isCleanNewsItem);
       }
     }
   } catch (e) {
@@ -400,10 +419,12 @@ export default function App() {
       }
 
       if (allNews.length > 0) {
-        allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setNews(allNews);
+        const cleanList = allNews.filter(isCleanNewsItem);
+        cleanList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setNews(cleanList);
         try {
-          localStorage.setItem('cached_tech_news_v2', JSON.stringify(allNews.slice(0, 100)));
+          localStorage.setItem('cached_tech_news_v3', JSON.stringify(cleanList.slice(0, 100)));
+          localStorage.removeItem('cached_tech_news_v2');
           localStorage.removeItem('cached_tech_news_v1');
         } catch (e) {
           console.warn("Failed to cache news to localStorage:", e);
@@ -610,9 +631,9 @@ export default function App() {
             </div>
           </div>
           
-          {news.length > 0 ? (
+          {news.filter(isCleanNewsItem).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-0 md:gap-6 -mx-4 sm:mx-0 bg-[#0d131f] md:bg-transparent">
-              {news.map((item) => (
+              {news.filter(isCleanNewsItem).map((item) => (
                 <NewsCard key={item.id} item={item} onClick={() => setSelectedNews(item)} />
               ))}
             </div>
