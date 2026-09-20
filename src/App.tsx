@@ -627,54 +627,10 @@ export default function App() {
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className={`transition-all duration-300 ${showAppPromo ? 'pt-[130px]' : 'pt-24'} pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center`}>
-        <motion.div
-          initial="initial"
-          animate="animate"
-          variants={fadeIn}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700 text-xs sm:text-sm text-slate-300 mb-6"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Empowering Ethiopian Tech
-        </motion.div>
-        
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-2"
-        >
-          Build the Future of <br className="hidden sm:block"/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
-            Tech in Habesha
-          </span>
-        </motion.h1>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-lg sm:text-xl md:text-2xl font-medium text-emerald-400/80 mb-5 font-serif"
-        >
-          የኢትዮጵያ የቴክኖሎጂ ማህበረሰብ
-        </motion.h2>
-        
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-base md:text-lg text-slate-400 max-w-2xl mb-8"
-        >
-          Join the fastest growing community of developers, designers, and tech enthusiasts in Ethiopia. Learn, build, and innovate together.
-        </motion.p>
-        
-      </section>
-
       {/* News Section (API Data) */}
-      <section id="news" className="py-12 md:py-16 border-b border-slate-800">
+      <section id="news" className={`transition-all duration-300 ${showAppPromo ? 'pt-[120px]' : 'pt-20'} pb-12 md:pb-16 border-b border-slate-800`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-2">Latest Tech News</h2>
               <p className="text-emerald-400 font-medium text-lg">ትኩስ የቴክኖሎጂ ዜናዎች</p>
