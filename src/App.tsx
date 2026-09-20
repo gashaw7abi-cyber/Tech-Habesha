@@ -41,6 +41,21 @@ interface NewsItem {
   metaDescription?: string;
 }
 
+const getCachedNews = (): NewsItem[] => {
+  try {
+    const cached = localStorage.getItem('cached_tech_news_v1');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to read cached news:", e);
+  }
+  return [];
+};
+
 const parseLinks = (text: string) => {
   if (!text) return text;
   // Matches URLs with http/https, www, or simple domain names (e.g., techhabesha.com, t.me)
@@ -139,8 +154,8 @@ const shareContent = async (title: string, content?: string, imageUrl?: string) 
 
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loadingNews, setLoadingNews] = useState(true);
+  const [news, setNews] = useState<NewsItem[]>(getCachedNews);
+  const [loadingNews, setLoadingNews] = useState<boolean>(() => getCachedNews().length === 0);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   
   // Auth state
@@ -352,60 +367,75 @@ export default function App() {
   };
 
   const fetchUpdatedNews = async () => {
-    setLoadingNews(true);
     try {
-      // First try to resolve firestore query with a 5 second timeout
-      let firestoreRes;
-      try {
-        const firestorePromise = getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)));
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 5000));
-        firestoreRes = await Promise.race([firestorePromise, timeoutPromise]) as any;
-      } catch (err) {
-        console.warn("Firestore fetch error or timeout:", err);
-      }
+      // 1. Fetch Firestore custom news (with 4s timeout)
+      const firestorePromise = (async (): Promise<NewsItem[]> => {
+        try {
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 4000));
+          const q = getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)));
+          const firestoreRes = await Promise.race([q, timeoutPromise]) as any;
+          if (firestoreRes && firestoreRes.docs) {
+            return firestoreRes.docs.map((doc: any) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                title: data.title,
+                source: data.source || "Tech Habesha",
+                date: data.date?.toDate?.()?.toISOString() || new Date().toISOString(),
+                content: data.content,
+                link: data.link || "",
+                imageUrl: data.imageUrl || undefined
+              };
+            });
+          }
+        } catch (err) {
+          console.warn("Firestore fetch error or timeout:", err);
+        }
+        return [];
+      })();
+
+      // 2. Fetch backend/RSS news
+      const apiPromise = (async (): Promise<NewsItem[]> => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const beRes = await fetch("/api/news", { signal: controller.signal });
+          clearTimeout(timeoutId);
+          
+          if (beRes.ok) {
+            const data = await beRes.json();
+            if (Array.isArray(data) && data.length > 0) {
+              return data;
+            }
+          }
+        } catch (err) {
+          console.warn("Backend fetch failed, falling back to client-side:", err);
+        }
+        return fetchClientSideNews();
+      })();
+
+      // Concurrently wait for both
+      const [customNewsResult, apiNewsResult] = await Promise.allSettled([firestorePromise, apiPromise]);
 
       let allNews: NewsItem[] = [];
 
-      if (firestoreRes && firestoreRes.docs) {
-        const customNews = firestoreRes.docs.map((doc: any) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: data.title,
-            source: data.source || "Tech Habesha",
-            date: data.date?.toDate?.()?.toISOString() || new Date().toISOString(),
-            content: data.content,
-            link: data.link || "",
-            imageUrl: data.imageUrl || undefined
-          };
-        });
-        allNews = allNews.concat(customNews);
+      if (customNewsResult.status === 'fulfilled' && Array.isArray(customNewsResult.value)) {
+        allNews = allNews.concat(customNewsResult.value);
       }
 
-      // Try fetching from our backend API, fallback to client side
-      let apiNews: NewsItem[] = [];
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        const beRes = await fetch("/api/news", { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (beRes.ok) {
-          apiNews = await beRes.json();
-        } else {
-          apiNews = await fetchClientSideNews();
+      if (apiNewsResult.status === 'fulfilled' && Array.isArray(apiNewsResult.value)) {
+        allNews = allNews.concat(apiNewsResult.value);
+      }
+
+      if (allNews.length > 0) {
+        allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setNews(allNews);
+        try {
+          localStorage.setItem('cached_tech_news_v1', JSON.stringify(allNews.slice(0, 100)));
+        } catch (e) {
+          console.warn("Failed to cache news to localStorage:", e);
         }
-      } catch (err) {
-        console.warn("Backend fetch failed, falling back to client-side:", err);
-        apiNews = await fetchClientSideNews();
       }
-
-      if (Array.isArray(apiNews) && apiNews.length > 0) {
-        allNews = allNews.concat(apiNews);
-      }
-
-      allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setNews(allNews);
     } catch (error) {
       console.error("Failed to fetch news:", error);
     } finally {
@@ -651,15 +681,16 @@ export default function App() {
             </div>
           </div>
           
-          {loadingNews ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mb-4" />
-              <p>ዜናዎችን በማምጣት ላይ...</p>
-            </div>
-          ) : news.length > 0 ? (
+          {news.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-0 md:gap-6 -mx-4 sm:mx-0 bg-[#0d131f] md:bg-transparent">
               {news.map((item) => (
                 <NewsCard key={item.id} item={item} onClick={() => setSelectedNews(item)} />
+              ))}
+            </div>
+          ) : loadingNews ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-y-0 md:gap-6 -mx-4 sm:mx-0 bg-[#0d131f] md:bg-transparent">
+              {[...Array(6)].map((_, i) => (
+                <NewsSkeletonCard key={i} />
               ))}
             </div>
           ) : (
@@ -1257,6 +1288,28 @@ function EventCard({ date, title, location, tags }: { date: string, title: strin
     </div>
   );
 }
+
+const NewsSkeletonCard: React.FC = () => {
+  return (
+    <div className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col h-full md:overflow-hidden pb-4 md:pb-0 animate-pulse">
+      <div className="w-full h-56 md:h-40 bg-slate-800/60 shrink-0"></div>
+      <div className="p-4 md:p-6 flex flex-col flex-grow space-y-4">
+        <div className="w-24 h-5 bg-slate-800/80 rounded-full"></div>
+        <div className="w-full h-5 bg-slate-800/80 rounded"></div>
+        <div className="w-4/5 h-5 bg-slate-800/80 rounded"></div>
+        <div className="space-y-2 flex-grow pt-2">
+          <div className="w-full h-3.5 bg-slate-800/40 rounded"></div>
+          <div className="w-full h-3.5 bg-slate-800/40 rounded"></div>
+          <div className="w-2/3 h-3.5 bg-slate-800/40 rounded"></div>
+        </div>
+        <div className="flex justify-between items-center pt-4">
+          <div className="w-20 h-4 bg-slate-800/60 rounded"></div>
+          <div className="w-8 h-8 bg-slate-800/60 rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onClick }) => {
   const handleShare = async (e: React.MouseEvent) => {
