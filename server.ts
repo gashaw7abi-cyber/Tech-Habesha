@@ -20,11 +20,13 @@ async function refreshNewsCache(): Promise<any[]> {
   try {
     let combinedNews: any[] = [];
 
-    // 1. Fetch RSS feeds in parallel
+    // 1. Fetch rich tech news RSS feeds in parallel (TechCrunch, The Verge, Engadget, Wired)
     const rssFeeds = [
       "https://techcrunch.com/category/gadgets/feed/",
+      "https://techcrunch.com/feed/",
       "https://www.theverge.com/rss/index.xml",
-      "https://www.engadget.com/rss.xml"
+      "https://www.engadget.com/rss.xml",
+      "https://www.wired.com/feed/category/gear/latest/rss"
     ];
 
     const rssPromises = rssFeeds.map(async (feedUrl) => {
@@ -51,7 +53,7 @@ async function refreshNewsCache(): Promise<any[]> {
           }
 
           return {
-            id: item.guid || Math.random().toString(),
+            id: item.guid || item.link || Math.random().toString(),
             title: item.title,
             source: feed.title || "Tech Source",
             date: item.isoDate || item.pubDate || new Date().toISOString(),
@@ -71,39 +73,9 @@ async function refreshNewsCache(): Promise<any[]> {
       combinedNews = combinedNews.concat(feedItems);
     }
 
-    // 2. Fetch Hacker News (top 60 fast)
-    try {
-      const topStoriesRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-      if (topStoriesRes.ok) {
-        const storyIds = await topStoriesRes.json();
-        const topIds = storyIds.slice(0, 60);
-        
-        const hnPromises = topIds.map((id: number) => 
-          fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
-            .then(r => r.json())
-            .catch(() => null)
-        );
-        const hnStories = await Promise.all(hnPromises);
-        
-        const formattedHN = hnStories.filter(Boolean).map(story => ({
-          id: `hn-${story.id}`,
-          title: story.title,
-          source: "Hacker News",
-          date: new Date(story.time * 1000).toISOString(),
-          content: "",
-          link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
-          imageUrl: null
-        }));
-        
-        combinedNews = combinedNews.concat(formattedHN);
-      }
-    } catch (hnErr) {
-      console.error("Error fetching Hacker News:", hnErr);
-    }
-
     combinedNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     if (combinedNews.length > 0) {
-      cachedNews = combinedNews.slice(0, 200);
+      cachedNews = combinedNews.slice(0, 150);
       lastCacheTime = Date.now();
     }
   } catch (error) {

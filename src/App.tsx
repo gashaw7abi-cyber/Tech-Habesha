@@ -43,11 +43,11 @@ interface NewsItem {
 
 const getCachedNews = (): NewsItem[] => {
   try {
-    const cached = localStorage.getItem('cached_tech_news_v1');
+    const cached = localStorage.getItem('cached_tech_news_v2') || localStorage.getItem('cached_tech_news_v1');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.filter((item: NewsItem) => item.source !== 'Hacker News');
       }
     }
   } catch (e) {
@@ -301,47 +301,19 @@ export default function App() {
 
   const fetchClientSideNews = async (): Promise<NewsItem[]> => {
     let combined: NewsItem[] = [];
-    
-    // 1. Hacker News
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", { signal: controller.signal });
-      clearTimeout(timeoutId);
-      
-      if (hnRes.ok) {
-        const topIds = await hnRes.json();
-        const storyPromises = topIds.slice(0, 30).map((id: number) => {
-          const itemController = new AbortController();
-          const itemTimeout = setTimeout(() => itemController.abort(), 8000);
-          return fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: itemController.signal })
-            .then(r => r.json())
-            .finally(() => clearTimeout(itemTimeout));
-        });
-        const stories = await Promise.all(storyPromises);
-        const hnNews = stories.filter(Boolean).map((story: any) => ({
-          id: story.id,
-          title: story.title,
-          source: "Hacker News",
-          date: new Date(story.time * 1000).toISOString(),
-          content: "",
-          link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
-          imageUrl: undefined
-        }));
-        combined = combined.concat(hnNews);
-      }
-    } catch (e) { console.warn("HN fetch failed:", e); }
 
-    // 2. RSS via public rss2json API
+    // RSS via public rss2json API (TechCrunch, The Verge, Engadget)
     const rssFeeds = [
       "https://techcrunch.com/category/gadgets/feed/",
-      "https://www.theverge.com/rss/index.xml"
+      "https://techcrunch.com/feed/",
+      "https://www.theverge.com/rss/index.xml",
+      "https://www.engadget.com/rss.xml"
     ];
 
     for (const feed of rssFeeds) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         
@@ -349,9 +321,9 @@ export default function App() {
           const data = await res.json();
           if (data.status === 'ok' && data.items) {
             const feedNews = data.items.map((item: any) => ({
-              id: item.guid || Math.random().toString(),
+              id: item.guid || item.link || Math.random().toString(),
               title: item.title,
-              source: data.feed.title || "Tech Source",
+              source: data.feed?.title || "Tech Habesha",
               date: item.pubDate || new Date().toISOString(),
               content: item.description?.replace(/<[^>]+>/g, '').trim(),
               link: item.link,
@@ -431,7 +403,8 @@ export default function App() {
         allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setNews(allNews);
         try {
-          localStorage.setItem('cached_tech_news_v1', JSON.stringify(allNews.slice(0, 100)));
+          localStorage.setItem('cached_tech_news_v2', JSON.stringify(allNews.slice(0, 100)));
+          localStorage.removeItem('cached_tech_news_v1');
         } catch (e) {
           console.warn("Failed to cache news to localStorage:", e);
         }
