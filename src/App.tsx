@@ -22,10 +22,11 @@ import {
   Check,
   Download,
   ExternalLink,
-  Mail
+  Mail,
+  AlertTriangle
 } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
-import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
 import { techLogo } from "./logo";
@@ -219,6 +220,8 @@ export default function App() {
   const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
   const [visits, setVisits] = useState<number | null>(null);
   const [dailyVisits, setDailyVisits] = useState<number | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
   const handleModalShare = async () => {
     if (!selectedNews) return;
@@ -385,7 +388,10 @@ export default function App() {
       const firestorePromise = (async (): Promise<NewsItem[]> => {
         try {
           const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 4000));
-          const q = getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50)));
+          const q = getDocs(query(collection(db, "custom_news"), orderBy("date", "desc"), limit(50))).catch((e) => {
+            console.warn("Firestore query error:", e);
+            return null;
+          });
           const firestoreRes = await Promise.race([q, timeoutPromise]) as any;
           if (firestoreRes && firestoreRes.docs) {
             return firestoreRes.docs.map((doc: any) => {
@@ -459,8 +465,43 @@ export default function App() {
     }
   };
 
+  const getAuthErrorMessage = (error: any) => {
+    const code = error?.code || "";
+    const msg = error?.message || "";
+    const host = window.location.hostname;
+
+    if (code === "auth/unauthorized-domain") {
+      return `ይህ ዶሜን (${host}) በ Firebase Auth 'Authorized domains' ዝርዝር ውስጥ አልተፈቀደም።\n\nመፍትሔ፦ በ Firebase Console -> Authentication -> Settings -> Authorized domains ውስጥ '${host}' እና 'www.${host.replace('www.', '')}' መካተታቸውን ያረጋግጡ።`;
+    }
+    if (code === "auth/operation-not-allowed") {
+      return "በ Firebase Console ውስጥ 'Google' Sign-in አልበራም (Disabled)።\n\nመፍትሔ፦ Firebase Console -> Authentication -> Sign-in method ገብተው Google Provider ን ያብሩ (Enable)።";
+    }
+    if (code === "auth/popup-blocked") {
+      return "የብራውዘር ፖፕአፕ (Popup) ታግዷል። እባክዎ ብራውዘርዎ ፖፕአፕ እንዲከፍት ፍቃድ ይስጡ ወይም ከስር ያለውን 'በቀጥታ ሞክር (Redirect)' የሚለውን ይጫኑ።";
+    }
+    if (code === "auth/popup-closed-by-user") {
+      return "የመግቢያ መስኮቱ ሳይጠናቀቅ ተዘግቷል። እባክዎ ደግመው ይሞክሩ።";
+    }
+    if (code === "auth/network-request-failed") {
+      return "የኢንተርኔት ግንኙነት ችግር ተፈጥሯል፤ እባክዎ ኔትወርክዎን ፈትሸው እንደገና ይሞክሩ።";
+    }
+    return msg || code || "የመግባት ሂደት አልተሳካም። እባክዎ ደግመው ይሞክሩ።";
+  };
+
   useEffect(() => {
     fetchUpdatedNews();
+
+    // Catch any redirect sign-in result (mobile flow)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect login error:", error);
+        setLoginError(getAuthErrorMessage(error));
+      });
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -470,10 +511,31 @@ export default function App() {
   }, []);
 
   const handleLogin = async () => {
+    setLoginError(null);
+    setLoggingIn(true);
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (error: any) {
+      console.error("Login popup failed:", error);
+      // If popup was blocked or closed on mobile, try redirect flow
+      if (
+        error.code === "auth/popup-blocked" ||
+        error.code === "auth/popup-closed-by-user" ||
+        error.code === "auth/cancelled-popup-request" ||
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      ) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: any) {
+          console.error("Redirect login failed:", redirectErr);
+          setLoginError(getAuthErrorMessage(redirectErr));
+        }
+      } else {
+        setLoginError(getAuthErrorMessage(error));
+      }
+    } finally {
+      setLoggingIn(false);
     }
   };
 
@@ -493,6 +555,42 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-emerald-500/30">
+      {/* Login Error Modal */}
+      {loginError && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative animate-in fade-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-rose-500/10 rounded-xl text-rose-400 shrink-0 border border-rose-500/20">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-2">የመግባት ስህተት (Login Error)</h3>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line mb-6">
+                  {loginError}
+                </p>
+                <div className="flex flex-wrap gap-2.5 justify-end">
+                  <button
+                    onClick={() => setLoginError(null)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    እሺ ዝጋ (Close)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLoginError(null);
+                      signInWithRedirect(auth, googleProvider).catch((e) => setLoginError(getAuthErrorMessage(e)));
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    በቀጥታ ሞክር (Redirect Login)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* App Promo Banner */}
       {showAppPromo && (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0f1523] border-b border-slate-800 px-3 py-2 flex items-center justify-between shadow-md">
@@ -573,9 +671,10 @@ export default function App() {
               ) : (
                 <button 
                   onClick={handleLogin}
-                  className="text-slate-400 hover:text-emerald-400 text-sm font-medium transition-colors cursor-pointer"
+                  disabled={loggingIn}
+                  className="text-slate-400 hover:text-emerald-400 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Admin Login
+                  {loggingIn ? "በመግባት ላይ..." : "Admin Login"}
                 </button>
               )}
             </div>
@@ -635,7 +734,13 @@ export default function App() {
                 {user ? (
                    <button onClick={handleLogout} className="w-full text-center text-slate-400 py-2">Logout</button>
                 ) : (
-                   <button onClick={handleLogin} className="w-full text-center text-slate-400 py-2">Admin Login</button>
+                   <button 
+                     onClick={handleLogin} 
+                     disabled={loggingIn}
+                     className="w-full text-center text-slate-400 hover:text-emerald-400 py-2 disabled:opacity-50 font-medium"
+                   >
+                     {loggingIn ? "በመግባት ላይ..." : "Admin Login"}
+                   </button>
                 )}
               </div>
             </div>
