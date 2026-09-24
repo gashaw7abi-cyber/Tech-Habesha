@@ -1,10 +1,12 @@
 {
-  "projectId": "inner-surge-m224x",
-  "appId": "1:627451720112:web:67a5f06e6bb464fb0c2675",
-  "apiKey": "AIzaSyA7cQ8JgRj0oVdlDEw43U2Szu81a4ixJS0",
-  "authDomain": "inner-surge-m224x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-f3a6e506-dd16-4b73-ae78-b15e252a469e",
-  "storageBucket": "inner-surge-m224x.firebasestorage.app",
-  "messagingSenderId": "627451720112",
-  "measurementId": ""
+  "projectId": "tech-habesha-c1071",
+  "appId": "1:1021897385270:web:2c3bd8a5d8d174dcbeff97",
+  "apiKey": "AIzaSyD3kz9MLGMOPDGP5Wso4OXSUSojTK9cJuU",
+  "authDomain": "tech-habesha-c1071.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-techhabesha-f3a6e506-dd16-4b73-ae78-b15e252a469e",
+  "storageBucket": "tech-habesha-c1071.firebasestorage.app",
+  "messagingSenderId": "1021897385270",
+  "measurementId": "",
+  "oAuthClientId": "1021897385270-mitb2rf0t2e0tg49bg2ssrld3vjjjq2e.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

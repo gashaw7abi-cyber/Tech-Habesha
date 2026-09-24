@@ -24,7 +24,7 @@ import {
   ExternalLink,
   Mail
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
@@ -56,6 +56,24 @@ const isCleanNewsItem = (item: any): boolean => {
   return true;
 };
 
+const deduplicateNewsItems = (items: NewsItem[]): NewsItem[] => {
+  const seen = new Set<string>();
+  const result: NewsItem[] = [];
+  for (const item of items) {
+    if (!item) continue;
+    const primaryKey = String(item.id || item.link || item.title || "").trim();
+    if (!primaryKey) continue;
+    if (!seen.has(primaryKey)) {
+      seen.add(primaryKey);
+      if (item.link) {
+        seen.add(String(item.link).trim());
+      }
+      result.push(item);
+    }
+  }
+  return result;
+};
+
 const getCachedNews = (): NewsItem[] => {
   try {
     // Thoroughly purge old legacy keys that contained Hacker News
@@ -66,7 +84,7 @@ const getCachedNews = (): NewsItem[] => {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.filter(isCleanNewsItem);
+        return deduplicateNewsItems(parsed.filter(isCleanNewsItem));
       }
     }
   } catch (e) {
@@ -179,6 +197,10 @@ export default function App() {
   
   // Auth state
   const [user, setUser] = useState<User | null>(null);
+
+  const displayedNews = useMemo(() => {
+    return deduplicateNewsItems(news.filter(isCleanNewsItem));
+  }, [news]);
 
   useEffect(() => {
     try {
@@ -354,7 +376,7 @@ export default function App() {
       } catch (e) { console.warn("RSS fetch failed:", e); }
     }
     
-    return combined;
+    return deduplicateNewsItems(combined);
   };
 
   const fetchUpdatedNews = async () => {
@@ -419,7 +441,7 @@ export default function App() {
       }
 
       if (allNews.length > 0) {
-        const cleanList = allNews.filter(isCleanNewsItem);
+        const cleanList = deduplicateNewsItems(allNews.filter(isCleanNewsItem));
         cleanList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setNews(cleanList);
         try {
@@ -631,10 +653,10 @@ export default function App() {
             </div>
           </div>
           
-          {news.filter(isCleanNewsItem).length > 0 ? (
+          {displayedNews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-0 md:gap-6 -mx-4 sm:mx-0 bg-[#0d131f] md:bg-transparent">
-              {news.filter(isCleanNewsItem).map((item) => (
-                <NewsCard key={item.id} item={item} onClick={() => setSelectedNews(item)} />
+              {displayedNews.map((item, index) => (
+                <NewsCard key={`${item.id || item.link || 'item'}-${index}`} item={item} onClick={() => setSelectedNews(item)} />
               ))}
             </div>
           ) : loadingNews ? (

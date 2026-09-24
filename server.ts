@@ -69,8 +69,16 @@ async function refreshNewsCache(): Promise<any[]> {
     });
 
     const rssResults = await Promise.all(rssPromises);
+    const seenKeys = new Set<string>();
     for (const feedItems of rssResults) {
-      combinedNews = combinedNews.concat(feedItems);
+      for (const item of feedItems) {
+        const uniqueKey = (item.id || item.link || item.title || "").trim();
+        if (uniqueKey && !seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey);
+          if (item.link) seenKeys.add(item.link.trim());
+          combinedNews.push(item);
+        }
+      }
     }
 
     combinedNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
