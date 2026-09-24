@@ -217,7 +217,12 @@ export default function App() {
   const [showAboutUs, setShowAboutUs] = useState(false);
   const [showContactUs, setShowContactUs] = useState(false);
   const [showAppPromo, setShowAppPromo] = useState(false);
-  const isAdmin = user?.email?.toLowerCase() === "gashaw7abi@gmail.com";
+  const ADMIN_EMAILS = useMemo(() => [
+    "gashaw7abi@gmail.com",
+    "gashaw0abi@gmail.com",
+    "gashaw1abi@gmail.com"
+  ], []);
+  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
   const [visits, setVisits] = useState<number | null>(null);
   const [dailyVisits, setDailyVisits] = useState<number | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -662,12 +667,21 @@ export default function App() {
                 </>
               )}
               {user ? (
-                <button 
-                  onClick={handleLogout}
-                  className="text-slate-400 hover:text-rose-400 flex items-center gap-2 text-sm transition-colors cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4" /> Logout
-                </button>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2.5 py-1 rounded-full border truncate max-w-[170px] ${
+                    isAdmin 
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-semibold' 
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`} title={user.email || ""}>
+                    {isAdmin ? 'Admin: ' : ''}{user.email}
+                  </span>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-slate-400 hover:text-rose-400 flex items-center gap-2 text-sm transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                </div>
               ) : (
                 <button 
                   onClick={handleLogin}
@@ -732,7 +746,16 @@ export default function App() {
                   <Download className="w-4 h-4" /> Download App
                 </a>
                 {user ? (
-                   <button onClick={handleLogout} className="w-full text-center text-slate-400 py-2">Logout</button>
+                   <div className="space-y-2 mb-2">
+                     <div className={`text-center text-xs py-1.5 px-3 rounded-lg border truncate ${
+                       isAdmin 
+                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium' 
+                         : 'bg-slate-900 border-slate-800 text-slate-400'
+                     }`}>
+                       {isAdmin ? 'Admin: ' : ''}{user.email}
+                     </div>
+                     <button onClick={handleLogout} className="w-full text-center text-rose-400 hover:text-rose-300 py-1.5 font-medium cursor-pointer">Logout</button>
+                   </div>
                 ) : (
                    <button 
                      onClick={handleLogin} 
