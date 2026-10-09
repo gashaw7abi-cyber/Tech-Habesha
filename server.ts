@@ -98,6 +98,12 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Set permissive CORS for Googlebot and crawlers
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    next();
+  });
+
   // Prewarm cache on server startup in background
   refreshNewsCache().catch(console.error);
 

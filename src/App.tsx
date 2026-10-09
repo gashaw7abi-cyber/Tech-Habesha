@@ -1005,6 +1005,15 @@ export default function App() {
               </div>
 
               <div className="p-6 md:p-8 flex flex-col flex-grow bg-slate-950 overflow-y-auto rounded-b-2xl">
+                {selectedNews.imageUrl && (
+                  <div className="mb-6 rounded-2xl overflow-hidden bg-slate-900/90 border border-slate-800 flex items-center justify-center p-2">
+                    <img 
+                      src={selectedNews.imageUrl} 
+                      alt={selectedNews.title} 
+                      className="w-full h-auto max-h-[500px] object-contain rounded-xl shadow-2xl"
+                    />
+                  </div>
+                )}
                 <div className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap flex-grow">
                   {parseLinks(selectedNews.content)}
                 </div>
@@ -1392,7 +1401,7 @@ function EventCard({ date, title, location, tags }: { date: string, title: strin
 const NewsSkeletonCard: React.FC = () => {
   return (
     <div className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col h-full md:overflow-hidden pb-4 md:pb-0 animate-pulse">
-      <div className="w-full h-56 md:h-40 bg-slate-800/60 shrink-0"></div>
+      <div className="w-full h-56 sm:h-60 md:h-56 lg:h-64 bg-slate-800/60 shrink-0"></div>
       <div className="p-4 md:p-6 flex flex-col flex-grow space-y-4">
         <div className="w-24 h-5 bg-slate-800/80 rounded-full"></div>
         <div className="w-full h-5 bg-slate-800/80 rounded"></div>
@@ -1419,16 +1428,18 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
 
   return (
     <div 
-      className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full md:overflow-hidden pb-4 md:pb-0"
+      onClick={onClick}
+      className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full md:overflow-hidden pb-4 md:pb-0 cursor-pointer"
     >
       {item.imageUrl && (
-        <div className="w-full h-56 md:h-40 bg-slate-800 overflow-hidden shrink-0">
+        <div className="w-full h-56 sm:h-60 md:h-56 lg:h-64 bg-slate-900 overflow-hidden shrink-0 relative flex items-center justify-center">
           <img 
             src={item.imageUrl} 
             alt={item.title} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity" />
         </div>
       )}
       <div className="p-4 md:p-6 flex flex-col flex-grow">
