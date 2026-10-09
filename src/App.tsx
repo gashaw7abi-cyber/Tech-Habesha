@@ -124,7 +124,7 @@ const shareContent = async (title: string, content?: string, imageUrl?: string) 
   const urlToShare = "https://techhabesha.com.et";
   
   const contentText = content ? content.split('\n').slice(0, 12).join('\n') + '\n\n' : '';
-  const shareText = `${title}\n\n${contentText}Download Tech Habesha App: https://www.techhabesha.com.et/`;
+  const shareText = `${title}\n\n${contentText}Read more at https://www.techhabesha.com.et/`;
 
   if (navigator.share) {
     let shareData: any = {
@@ -1401,7 +1401,7 @@ function EventCard({ date, title, location, tags }: { date: string, title: strin
 const NewsSkeletonCard: React.FC = () => {
   return (
     <div className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col h-full md:overflow-hidden pb-4 md:pb-0 animate-pulse">
-      <div className="w-full h-56 sm:h-60 md:h-56 lg:h-64 bg-slate-800/60 shrink-0"></div>
+      <div className="w-full aspect-video bg-slate-800/60 shrink-0"></div>
       <div className="p-4 md:p-6 flex flex-col flex-grow space-y-4">
         <div className="w-24 h-5 bg-slate-800/80 rounded-full"></div>
         <div className="w-full h-5 bg-slate-800/80 rounded"></div>
@@ -1432,14 +1432,14 @@ const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onC
       className="bg-[#0f1523] border-b border-slate-800/80 md:bg-slate-900/40 md:border md:border-slate-800 md:rounded-2xl flex flex-col hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group h-full md:overflow-hidden pb-4 md:pb-0 cursor-pointer"
     >
       {item.imageUrl && (
-        <div className="w-full h-56 sm:h-60 md:h-56 lg:h-64 bg-slate-900 overflow-hidden shrink-0 relative flex items-center justify-center">
+        <div className="w-full aspect-video bg-slate-900 overflow-hidden shrink-0 relative flex items-center justify-center">
           <img 
             src={item.imageUrl} 
             alt={item.title} 
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity pointer-events-none" />
         </div>
       )}
       <div className="p-4 md:p-6 flex flex-col flex-grow">
