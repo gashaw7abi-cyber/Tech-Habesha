@@ -20,7 +20,6 @@ import {
   Video,
   Share2,
   Check,
-  Download,
   ExternalLink,
   Mail,
   AlertTriangle
@@ -216,7 +215,6 @@ export default function App() {
   const [showTermsOfService, setShowTermsOfService] = useState(false);
   const [showAboutUs, setShowAboutUs] = useState(false);
   const [showContactUs, setShowContactUs] = useState(false);
-  const [showAppPromo, setShowAppPromo] = useState(false);
   const ADMIN_EMAILS = useMemo(() => [
     "gashaw7abi@gmail.com",
     "gashaw0abi@gmail.com",
@@ -264,18 +262,6 @@ export default function App() {
       setShowContactUs(true);
     }
   }, []);
-
-  useEffect(() => {
-    const hasDismissed = sessionStorage.getItem('appPromoDismissed');
-    if (!hasDismissed) {
-      setShowAppPromo(true);
-    }
-  }, []);
-
-  const dismissPromo = () => {
-    setShowAppPromo(false);
-    sessionStorage.setItem('appPromoDismissed', 'true');
-  };
 
   useEffect(() => {
     // Record visit
@@ -596,39 +582,8 @@ export default function App() {
         </div>
       )}
 
-      {/* App Promo Banner */}
-      {showAppPromo && (
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0f1523] border-b border-slate-800 px-3 py-2 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={dismissPromo}
-              className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-700">
-              <img src={techLogo} alt="Tech Habesha" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-slate-100 text-[15px] leading-tight">Tech Habesha</span>
-              <div className="flex text-emerald-500 text-[10px] mt-0.5">
-                {'★'.repeat(5)}
-              </div>
-            </div>
-          </div>
-          <a 
-            href="https://www.dropbox.com/scl/fi/5837no93zibig0dobfd0f/app.apk?rlkey=to61dxjsmt18elbhcdzej43nq&st=hz8b1bjg&dl=1" 
-            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
-            onClick={dismissPromo}
-          >
-            DOWNLOAD
-            <Download className="w-4 h-4" />
-          </a>
-        </div>
-      )}
-
       {/* Navigation */}
-      <nav className={`fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 transition-all duration-300 ${showAppPromo ? 'top-[56px]' : 'top-0'}`}>
+      <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -742,9 +697,6 @@ export default function App() {
                 <a href="https://t.me/TechHabeshas" target="_blank" rel="noopener noreferrer" className="w-full bg-[#2AABEE] hover:bg-[#229ED9] text-white px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
                   <Send className="w-4 h-4" /> Join Telegram
                 </a>
-                <a href="https://www.dropbox.com/scl/fi/5837no93zibig0dobfd0f/app.apk?rlkey=to61dxjsmt18elbhcdzej43nq&st=hz8b1bjg&dl=1" className="w-full bg-emerald-500 text-slate-950 px-5 py-2 rounded-md font-medium cursor-pointer mb-3 flex items-center justify-center gap-2 transition-colors">
-                  <Download className="w-4 h-4" /> Download App
-                </a>
                 {user ? (
                    <div className="space-y-2 mb-2">
                      <div className={`text-center text-xs py-1.5 px-3 rounded-lg border truncate ${
@@ -772,7 +724,7 @@ export default function App() {
       </nav>
 
       {/* News Section (API Data) */}
-      <section id="news" className={`transition-all duration-300 ${showAppPromo ? 'pt-[120px]' : 'pt-20'} pb-12 md:pb-16 border-b border-slate-800`}>
+      <section id="news" className="pt-20 pb-12 md:pb-16 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12">
             <div>
