@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tech Habesha</title>
+    <link>https://www.techhabesha.com.et/</link>
+    <description>Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.</description>
+    <language>en</language>
+    <atom:link href="https://www.techhabesha.com.et/rss.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>https://www.techhabesha.com.et/favicon-512.png</url>
+      <title>Tech Habesha</title>
+      <link>https://www.techhabesha.com.et/</link>
+    </image>
+  </channel>
+</rss>

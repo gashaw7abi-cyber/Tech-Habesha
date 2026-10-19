@@ -119,17 +119,19 @@ const parseLinks = (text: string) => {
   });
 };
 
-const shareContent = async (title: string, content?: string, imageUrl?: string) => {
-  const urlToShare = "https://techhabesha.com.et";
+const shareContent = async (title: string, content?: string, imageUrl?: string, itemId?: string | number) => {
+  const articleUrl = itemId 
+    ? `https://www.techhabesha.com.et/?news=${encodeURIComponent(String(itemId))}`
+    : "https://www.techhabesha.com.et/";
   
   const contentText = content ? content.split('\n').slice(0, 12).join('\n') + '\n\n' : '';
-  const shareText = `${title}\n\n${contentText}Read more at https://www.techhabesha.com.et/`;
+  const shareText = `${title}\n\n${contentText}Read more at ${articleUrl}`;
 
   if (navigator.share) {
     let shareData: any = {
       title: title,
       text: shareText,
-      url: urlToShare,
+      url: articleUrl,
     };
 
     let sharedAsFile = false;
@@ -185,7 +187,7 @@ const shareContent = async (title: string, content?: string, imageUrl?: string) 
     }
   } else {
     // Fallback to Telegram share
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(urlToShare)}&text=${encodeURIComponent(shareText)}`, '_blank');
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
   }
 };
 
@@ -228,24 +230,129 @@ export default function App() {
 
   const handleModalShare = async () => {
     if (!selectedNews) return;
-    await shareContent(selectedNews.title, selectedNews.content, selectedNews.imageUrl);
+    await shareContent(selectedNews.title, selectedNews.content, selectedNews.imageUrl, selectedNews.id || selectedNews.link || selectedNews.title);
   };
 
   useEffect(() => {
-    if (selectedNews) {
-      document.title = `${selectedNews.title} | Tech Habesha`;
-      let metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) {
-        metaDesc.setAttribute('content', selectedNews.metaDescription || selectedNews.content.slice(0, 155) + '...');
+    const setMeta = (selector: string, attr: string, val: string) => {
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement(selector.startsWith('meta') ? 'meta' : 'link');
+        const match = selector.match(/\[([a-zA-Z:-]+)="([^"]+)"\]/);
+        if (match) el.setAttribute(match[1], match[2]);
+        document.head.appendChild(el);
       }
+      el.setAttribute(attr, val);
+    };
+
+    if (selectedNews) {
+      const articleUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(String(selectedNews.id || selectedNews.link || selectedNews.title))}`;
+      const articleDesc = selectedNews.metaDescription || (selectedNews.content ? selectedNews.content.slice(0, 160).replace(/\s+/g, ' ') + '...' : selectedNews.title);
+      const articleImg = selectedNews.imageUrl || "https://www.techhabesha.com.et/favicon-512.png";
+
+      document.title = `${selectedNews.title} | Tech Habesha`;
+      setMeta('meta[name="description"]', 'content', articleDesc);
+      setMeta('meta[property="og:title"]', 'content', selectedNews.title);
+      setMeta('meta[property="og:description"]', 'content', articleDesc);
+      setMeta('meta[property="og:image"]', 'content', articleImg);
+      setMeta('meta[property="og:url"]', 'content', articleUrl);
+      setMeta('meta[property="og:type"]', 'content', 'article');
+      setMeta('meta[name="twitter:title"]', 'content', selectedNews.title);
+      setMeta('meta[name="twitter:description"]', 'content', articleDesc);
+      setMeta('meta[name="twitter:image"]', 'content', articleImg);
+      setMeta('link[rel="canonical"]', 'href', articleUrl);
+
+      // Schema.org NewsArticle structured data for Google Discover
+      let scriptLd = document.getElementById('schema-newsarticle') as HTMLScriptElement | null;
+      if (!scriptLd) {
+        scriptLd = document.createElement('script');
+        scriptLd.id = 'schema-newsarticle';
+        scriptLd.type = 'application/ld+json';
+        document.head.appendChild(scriptLd);
+      }
+      scriptLd.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "NewsArticle",
+        "headline": selectedNews.title,
+        "description": articleDesc,
+        "image": [articleImg],
+        "datePublished": selectedNews.date,
+        "dateModified": selectedNews.date,
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": articleUrl
+        },
+        "author": [{
+          "@type": "Organization",
+          "name": selectedNews.source || "Tech Habesha",
+          "url": "https://www.techhabesha.com.et/"
+        }],
+        "publisher": {
+          "@type": "Organization",
+          "name": "Tech Habesha",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.techhabesha.com.et/favicon-512.png"
+          }
+        }
+      });
+
+      // Synchronize URL query parameter without full reload
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('news', String(selectedNews.id || selectedNews.link || selectedNews.title));
+        window.history.replaceState({ newsId: selectedNews.id }, '', url.toString());
+      } catch (e) {}
+
     } else {
       document.title = "Tech Habesha";
-      let metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) {
-        metaDesc.setAttribute('content', "Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.");
-      }
+      const siteDesc = "Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.";
+      const siteUrl = "https://www.techhabesha.com.et/";
+      const siteImg = "https://www.techhabesha.com.et/favicon-512.png";
+
+      setMeta('meta[name="description"]', 'content', siteDesc);
+      setMeta('meta[property="og:title"]', 'content', 'Tech Habesha');
+      setMeta('meta[property="og:description"]', 'content', siteDesc);
+      setMeta('meta[property="og:image"]', 'content', siteImg);
+      setMeta('meta[property="og:url"]', 'content', siteUrl);
+      setMeta('meta[property="og:type"]', 'content', 'website');
+      setMeta('meta[name="twitter:title"]', 'content', 'Tech Habesha');
+      setMeta('meta[name="twitter:description"]', 'content', siteDesc);
+      setMeta('meta[name="twitter:image"]', 'content', siteImg);
+      setMeta('link[rel="canonical"]', 'href', siteUrl);
+
+      const scriptLd = document.getElementById('schema-newsarticle');
+      if (scriptLd) scriptLd.remove();
+
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('news')) {
+          url.searchParams.delete('news');
+          window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+        }
+      } catch (e) {}
     }
   }, [selectedNews]);
+
+  // Support deep links from Google Discover or shared URLs (?news=...)
+  useEffect(() => {
+    if (displayedNews.length > 0 && !selectedNews) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const newsParam = params.get('news');
+        if (newsParam) {
+          const found = displayedNews.find(n => 
+            String(n.id) === newsParam || 
+            String(n.link) === newsParam || 
+            String(n.title).toLowerCase() === newsParam.toLowerCase()
+          );
+          if (found) {
+            setSelectedNews(found);
+          }
+        }
+      } catch (e) {}
+    }
+  }, [displayedNews]);
 
   useEffect(() => {
     // Handle hash links for AdSense crawlers/direct links
@@ -1375,7 +1482,7 @@ const NewsSkeletonCard: React.FC = () => {
 const NewsCard: React.FC<{ item: NewsItem, onClick: () => void }> = ({ item, onClick }) => {
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await shareContent(item.title, item.content, item.imageUrl);
+    await shareContent(item.title, item.content, item.imageUrl, item.id || item.link || item.title);
   };
 
   return (

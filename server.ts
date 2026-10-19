@@ -129,7 +129,112 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
+  // Helper to escape XML
+  const escapeXml = (unsafe: string) => {
+    return (unsafe || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+  };
+
+  // Google Discover / Feed RSS 2.0 Endpoint
+  app.get(["/rss.xml", "/feed.xml", "/rss"], async (req, res) => {
+    try {
+      let newsItems = cachedNews;
+      if (newsItems.length === 0) {
+        newsItems = await refreshNewsCache();
+      }
+
+      const buildDate = new Date().toUTCString();
+      const itemsXml = newsItems.slice(0, 50).map((item) => {
+        const itemDate = item.date ? new Date(item.date).toUTCString() : buildDate;
+        const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(item.id || item.link || item.title)}`;
+        const enclosureTag = item.imageUrl
+          ? `\n      <enclosure url="${escapeXml(item.imageUrl)}" type="image/jpeg" length="0" />\n      <media:content url="${escapeXml(item.imageUrl)}" medium="image" />`
+          : "";
+
+        return `    <item>
+      <title><![CDATA[${item.title || "Tech News"}]]></title>
+      <link>${escapeXml(itemUrl)}</link>
+      <guid isPermaLink="false">${escapeXml(String(item.id || item.link || item.title))}</guid>
+      <pubDate>${itemDate}</pubDate>
+      <source url="https://www.techhabesha.com.et/">${escapeXml(item.source || "Tech Habesha")}</source>
+      <description><![CDATA[${item.content || item.title || ""}]]></description>${enclosureTag}
+    </item>`;
+      }).join("\n");
+
+      const rssContent = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tech Habesha</title>
+    <link>https://www.techhabesha.com.et/</link>
+    <description>Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.</description>
+    <language>en</language>
+    <lastBuildDate>${buildDate}</lastBuildDate>
+    <atom:link href="https://www.techhabesha.com.et/rss.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>https://www.techhabesha.com.et/favicon-512.png</url>
+      <title>Tech Habesha</title>
+      <link>https://www.techhabesha.com.et/</link>
+    </image>
+${itemsXml}
+  </channel>
+</rss>`;
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=600, s-maxage=1200");
+      res.send(rssContent);
+    } catch (err) {
+      console.error("Error generating RSS:", err);
+      res.status(500).send("Error generating RSS feed");
+    }
+  });
+
+  // Sitemap.xml for Google Discover & Search Engines
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      let newsItems = cachedNews;
+      if (newsItems.length === 0) {
+        newsItems = await refreshNewsCache();
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const itemsXml = newsItems.slice(0, 100).map((item) => {
+        const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(item.id || item.link || item.title)}`;
+        const imageTag = item.imageUrl
+          ? `\n    <image:image>\n      <image:loc>${escapeXml(item.imageUrl)}</image:loc>\n      <image:title>${escapeXml(item.title || "Tech News")}</image:title>\n    </image:image>`
+          : "";
+        const itemDate = item.date ? item.date.split("T")[0] : today;
+
+        return `  <url>
+    <loc>${escapeXml(itemUrl)}</loc>
+    <lastmod>${itemDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>${imageTag}
+  </url>`;
+      }).join("\n");
+
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://www.techhabesha.com.et/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+${itemsXml}
+</urlset>`;
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=600, s-maxage=1200");
+      res.send(sitemap);
+    } catch (err) {
+      console.error("Error generating Sitemap:", err);
+      res.status(500).send("Error generating Sitemap");
+    }
+  });
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
