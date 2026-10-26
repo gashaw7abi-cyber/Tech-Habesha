@@ -16,15 +16,14 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://www.techhabesha.com.et/" />
 
-    <!-- Favicon and Site Icons (Google Search requires square icons, multiples of 48px) -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Favicon and Site Icons (Google Search strictly requires multiples of 48px: 48x48, 96x96, 144x144, 192x192, 512x512; never list 16x16) -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="48x48 96x96 144x144" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
     <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     
@@ -37,13 +36,21 @@
     <link rel="alternate" type="application/rss+xml" title="Tech Habesha RSS Feed" href="https://www.techhabesha.com.et/rss.xml" />
     <link rel="sitemap" type="application/xml" title="Tech Habesha Sitemap" href="https://www.techhabesha.com.et/sitemap.xml" />
 
-    <!-- Open Graph / Twitter / SEO Meta Tags -->
+    <!-- Open Graph / Twitter / Google Search Thumbnail & Site Name Meta Tags -->
+    <meta name="application-name" content="Tech Habesha" />
+    <meta name="apple-mobile-web-app-title" content="Tech Habesha" />
     <meta name="description" content="Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations." />
     <meta name="keywords" content="Tech Habesha, Ethiopia Tech, Technology News Ethiopia, Ethiopian Startups, Habesha Tech, Tech News Amharic, Africa Tech" />
+    <meta name="thumbnail" content="https://www.techhabesha.com.et/favicon-512.png" />
     <meta property="og:site_name" content="Tech Habesha" />
     <meta property="og:title" content="Tech Habesha" />
     <meta property="og:description" content="Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations." />
     <meta property="og:image" content="https://www.techhabesha.com.et/favicon-512.png" />
+    <meta property="og:image:secure_url" content="https://www.techhabesha.com.et/favicon-512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Tech Habesha Logo" />
     <meta property="og:url" content="https://www.techhabesha.com.et/" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -51,27 +58,59 @@
     <meta name="twitter:description" content="Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations." />
     <meta name="twitter:image" content="https://www.techhabesha.com.et/favicon-512.png" />
     
-    <!-- JSON-LD for Organization Logo and Site Name -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://www.techhabesha.com.et/#organization",
-        "name": "Tech Habesha",
-        "url": "https://www.techhabesha.com.et/",
-        "logo": "https://www.techhabesha.com.et/favicon-512.png",
-        "image": "https://www.techhabesha.com.et/favicon-512.png"
-      }
-    </script>
+    <!-- Dedicated Top-Level WebSite JSON-LD for Google Search Site Name -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "@id": "https://www.techhabesha.com.et/#website",
         "name": "Tech Habesha",
-        "alternateName": ["TechHabesha", "techhabesha.com.et", "www.techhabesha.com.et"],
-        "url": "https://www.techhabesha.com.et/",
-        "image": "https://www.techhabesha.com.et/favicon-512.png"
+        "alternateName": ["TechHabesha", "ቴክ ሐበሻ"],
+        "url": "https://www.techhabesha.com.et/"
+      }
+    </script>
+
+    <!-- JSON-LD for Organization Logo and WebPage Primary Image -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.techhabesha.com.et/#organization",
+            "name": "Tech Habesha",
+            "alternateName": "TechHabesha",
+            "url": "https://www.techhabesha.com.et/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://www.techhabesha.com.et/#logo",
+              "url": "https://www.techhabesha.com.et/favicon-512.png",
+              "contentUrl": "https://www.techhabesha.com.et/favicon-512.png",
+              "width": 512,
+              "height": 512,
+              "caption": "Tech Habesha"
+            },
+            "image": {
+              "@id": "https://www.techhabesha.com.et/#logo"
+            }
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://www.techhabesha.com.et/#webpage",
+            "url": "https://www.techhabesha.com.et/",
+            "name": "Tech Habesha",
+            "isPartOf": {
+              "@id": "https://www.techhabesha.com.et/#website"
+            },
+            "about": {
+              "@id": "https://www.techhabesha.com.et/#organization"
+            },
+            "primaryImageOfPage": {
+              "@id": "https://www.techhabesha.com.et/#logo"
+            },
+            "thumbnailUrl": "https://www.techhabesha.com.et/favicon-512.png"
+          }
+        ]
       }
     </script>
 
@@ -96,7 +135,9 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;">Tech Habesha</h1>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

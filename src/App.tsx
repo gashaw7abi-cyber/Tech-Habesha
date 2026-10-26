@@ -693,10 +693,10 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <img src={techLogo} alt="Tech Habesha Logo" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
-              <span className="font-bold text-xl tracking-tight">TECH <span className="text-emerald-500">HABESHA</span></span>
-            </div>
+            <a href="/" className="flex items-center gap-2">
+              <img src={techLogo} alt="Tech Habesha" className="w-10 h-10 rounded-full object-cover border border-slate-800" />
+              <h1 className="font-bold text-xl tracking-tight uppercase m-0">Tech <span className="text-emerald-500">Habesha</span></h1>
+            </a>
             
             <div className="hidden md:flex space-x-8">
               <a href="#about" className="text-sm font-medium text-slate-300 hover:text-emerald-400 transition-colors">About</a>
