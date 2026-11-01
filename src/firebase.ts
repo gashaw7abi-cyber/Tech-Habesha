@@ -10,10 +10,10 @@ googleProvider.setCustomParameters({
   prompt: "select_account"
 });
 
-// Use long-polling to prevent 10s WebChannel connection timeouts on mobile/cellular and proxied networks
+// Configure Firestore with auto-detect long polling for optimal connection resilience
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
-// Suppress non-fatal offline transition warnings
-setLogLevel("error");
+// Suppress internal offline-mode transition warnings so network transitions operate smoothly
+setLogLevel("silent");

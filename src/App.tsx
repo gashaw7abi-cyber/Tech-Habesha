@@ -227,6 +227,8 @@ export default function App() {
   const [dailyVisits, setDailyVisits] = useState<number | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
+  const [adminPostError, setAdminPostError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
 
   const handleModalShare = async () => {
     if (!selectedNews) return;
@@ -393,7 +395,8 @@ export default function App() {
           localStorage.setItem('lastVisitDate', todayDate);
         }
       } catch (error) {
-        console.error("Failed to record visit:", error);
+        // Silently tolerate offline or transient connection state so app experience is completely unaffected
+        console.warn("Notice: could not update stats visits:", error);
       }
     };
     recordVisit();
@@ -557,7 +560,7 @@ export default function App() {
         }
       }
     } catch (error) {
-      console.error("Failed to fetch news:", error);
+      console.warn("Notice: could not refresh latest news:", error);
     } finally {
       setLoadingNews(false);
     }
@@ -1097,9 +1100,17 @@ export default function App() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto w-full">
+              {adminPostError && (
+                <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{adminPostError}</span>
+                </div>
+              )}
               <form 
                 onSubmit={async (e) => {
                   e.preventDefault();
+                  setAdminPostError(null);
+                  setIsPublishing(true);
                   const form = e.target as HTMLFormElement;
                   const title = (form.elements.namedItem("title") as HTMLInputElement).value;
                   const content = (form.elements.namedItem("content") as HTMLTextAreaElement).value;
@@ -1123,9 +1134,11 @@ export default function App() {
                     form.reset();
                     setShowAdminModal(false);
                     fetchUpdatedNews();
-                  } catch (error) {
-                    console.error("Error adding document: ", error);
-                    alert("Failed to add news");
+                  } catch (error: any) {
+                    console.warn("Notice: could not publish custom news:", error);
+                    setAdminPostError(error?.message || "Failed to publish news. Please check connection.");
+                  } finally {
+                    setIsPublishing(false);
                   }
                 }}
                 className="space-y-4"
@@ -1178,8 +1191,20 @@ export default function App() {
                   <button type="button" onClick={() => setShowAdminModal(false)} className="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors font-medium cursor-pointer">
                     Cancel
                   </button>
-                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-6 py-2 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-2">
-                    <PlusCircle className="w-4 h-4" /> Publish News
+                  <button 
+                    type="submit" 
+                    disabled={isPublishing}
+                    className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 px-6 py-2 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    {isPublishing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="w-4 h-4" /> Publish News
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
