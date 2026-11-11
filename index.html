@@ -14,7 +14,21 @@
     </script>
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://www.techhabesha.com.et/" />
+    <link rel="canonical" id="canonical-link" href="https://www.techhabesha.com.et/" />
+    <script>
+      (function() {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var newsId = params.get('news');
+          if (newsId) {
+            var canon = document.getElementById('canonical-link');
+            if (canon) {
+              canon.setAttribute('href', 'https://www.techhabesha.com.et/?news=' + encodeURIComponent(newsId));
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Favicon and Site Icons (Google Search strictly requires multiples of 48px: 48x48, 96x96, 144x144, 192x192, 512x512; never list 16x16) -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="48x48 96x96 144x144" />

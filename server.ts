@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import Parser from "rss-parser";
+import firebaseConfig from "./firebase-applet-config.json";
 
 const parser = new Parser({
   customFields: {
@@ -14,13 +15,56 @@ let lastCacheTime = 0;
 let isRefreshing = false;
 const CACHE_TTL_MS = 8 * 60 * 1000; // 8 minutes cache
 
+async function fetchFirestoreCustomNews(): Promise<any[]> {
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents:runQuery?key=${firebaseConfig.apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "custom_news" }],
+          orderBy: [{ field: { fieldPath: "date" }, direction: "DESCENDING" }],
+          limit: 50,
+        },
+      }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .filter((row: any) => row.document && row.document.fields)
+      .map((row: any) => {
+        const doc = row.document;
+        const fields = doc.fields;
+        const docId = doc.name.split("/").pop();
+        return {
+          id: docId,
+          title: fields.title?.stringValue || "Tech Habesha News",
+          source: fields.source?.stringValue || "Tech Habesha",
+          date:
+            fields.date?.timestampValue ||
+            doc.createTime ||
+            new Date().toISOString(),
+          content: fields.content?.stringValue || "",
+          metaDescription: fields.metaDescription?.stringValue || undefined,
+          link: fields.link?.stringValue || "",
+          imageUrl: fields.imageUrl?.stringValue || null,
+        };
+      });
+  } catch (err) {
+    return [];
+  }
+}
+
 async function refreshNewsCache(): Promise<any[]> {
   if (isRefreshing) return cachedNews;
   isRefreshing = true;
   try {
     let combinedNews: any[] = [];
 
-    // 1. Fetch rich tech news RSS feeds in parallel (TechCrunch, The Verge, Engadget, Wired)
+    // 1. Fetch custom news from Firestore + rich tech news RSS feeds in parallel
     const rssFeeds = [
       "https://techcrunch.com/category/gadgets/feed/",
       "https://techcrunch.com/feed/",
@@ -68,8 +112,20 @@ async function refreshNewsCache(): Promise<any[]> {
       }
     });
 
-    const rssResults = await Promise.all(rssPromises);
+    const [customItems, ...rssResults] = await Promise.all([
+      fetchFirestoreCustomNews(),
+      ...rssPromises
+    ]);
+
     const seenKeys = new Set<string>();
+    for (const item of customItems) {
+      const uniqueKey = String(item.id || item.link || item.title || "").trim();
+      if (uniqueKey && !seenKeys.has(uniqueKey)) {
+        seenKeys.add(uniqueKey);
+        combinedNews.push(item);
+      }
+    }
+
     for (const feedItems of rssResults) {
       for (const item of feedItems) {
         const uniqueKey = (item.id || item.link || item.title || "").trim();
@@ -110,17 +166,14 @@ async function startServer() {
   // API Routes
   app.get("/api/news", async (req, res) => {
     try {
-      // If we have cached news, return immediately without waiting (< 2ms response!)
       if (cachedNews.length > 0) {
         res.json(cachedNews);
-        // If cache is older than TTL, trigger background refresh
         if (Date.now() - lastCacheTime > CACHE_TTL_MS) {
           refreshNewsCache().catch(console.error);
         }
         return;
       }
 
-      // If cache is empty, fetch and respond
       const news = await refreshNewsCache();
       res.json(news);
     } catch (error) {
@@ -129,14 +182,36 @@ async function startServer() {
     }
   });
 
-  // Helper to escape XML
+  // Helper to sanitize and escape XML
   const escapeXml = (unsafe: string) => {
-    return (unsafe || "")
+    return String(unsafe || "")
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&apos;");
+  };
+
+  const toValidRfc822Date = (dateStr: any, fallback: string) => {
+    if (!dateStr) return fallback;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? fallback : d.toUTCString();
+  };
+
+  const toValidIsoDate = (dateStr: any, fallback: string) => {
+    if (!dateStr) return fallback;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? fallback : d.toISOString().split("T")[0];
+  };
+
+  const getImageMimeType = (url: string) => {
+    if (!url) return "image/jpeg";
+    const lower = url.toLowerCase();
+    if (lower.includes(".png")) return "image/png";
+    if (lower.includes(".webp")) return "image/webp";
+    if (lower.includes(".gif")) return "image/gif";
+    return "image/jpeg";
   };
 
   // Google Discover / Feed RSS 2.0 Endpoint
@@ -148,20 +223,49 @@ async function startServer() {
       }
 
       const buildDate = new Date().toUTCString();
-      const itemsXml = newsItems.slice(0, 50).map((item) => {
-        const itemDate = item.date ? new Date(item.date).toUTCString() : buildDate;
-        const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(item.id || item.link || item.title)}`;
-        const enclosureTag = item.imageUrl
-          ? `\n      <enclosure url="${escapeXml(item.imageUrl)}" type="image/jpeg" length="0" />\n      <media:content url="${escapeXml(item.imageUrl)}" medium="image" />`
-          : "";
+      const seenUrls = new Set<string>();
+      const validItems: any[] = [];
+
+      for (const item of newsItems) {
+        if (!item || !item.title) continue;
+        const rawKey = String(item.id || item.link || item.title).trim();
+        if (!rawKey) continue;
+        const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(rawKey)}`;
+        if (seenUrls.has(itemUrl)) continue;
+        seenUrls.add(itemUrl);
+        validItems.push({ ...item, itemUrl });
+      }
+
+      // Guarantee at least one item so RSS 2.0 never fails Google Search Console validation
+      if (validItems.length === 0) {
+        validItems.push({
+          title: "Tech Habesha - Leading Ethiopian Technology News & Startups Platform",
+          source: "Tech Habesha",
+          date: new Date().toISOString(),
+          content: "Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.",
+          imageUrl: "https://www.techhabesha.com.et/favicon-512.png",
+          itemUrl: "https://www.techhabesha.com.et/"
+        });
+      }
+
+      const itemsXml = validItems.slice(0, 50).map((item) => {
+        const itemDate = toValidRfc822Date(item.date, buildDate);
+        const validImage =
+          item.imageUrl && /^https?:\/\//i.test(item.imageUrl)
+            ? item.imageUrl
+            : "https://www.techhabesha.com.et/favicon-512.png";
+        const mimeType = getImageMimeType(validImage);
+        const cleanSummary = (item.metaDescription || item.content || item.title || "").slice(0, 600);
 
         return `    <item>
-      <title><![CDATA[${item.title || "Tech News"}]]></title>
-      <link>${escapeXml(itemUrl)}</link>
-      <guid isPermaLink="false">${escapeXml(String(item.id || item.link || item.title))}</guid>
+      <title>${escapeXml(item.title || "Tech News")}</title>
+      <link>${escapeXml(item.itemUrl)}</link>
+      <guid isPermaLink="true">${escapeXml(item.itemUrl)}</guid>
       <pubDate>${itemDate}</pubDate>
-      <source url="https://www.techhabesha.com.et/">${escapeXml(item.source || "Tech Habesha")}</source>
-      <description><![CDATA[${item.content || item.title || ""}]]></description>${enclosureTag}
+      <dc:creator>${escapeXml(item.source || "Tech Habesha")}</dc:creator>
+      <description>${escapeXml(cleanSummary)}</description>
+      <enclosure url="${escapeXml(validImage)}" type="${mimeType}" length="150000" />
+      <media:content url="${escapeXml(validImage)}" medium="image" type="${mimeType}" />
     </item>`;
       }).join("\n");
 
@@ -192,7 +296,7 @@ ${itemsXml}
     }
   });
 
-  // Sitemap.xml for Google Discover & Search Engines
+  // Sitemap.xml for Google Discover & Search Engines (never includes /rss.xml inside urlset)
   app.get("/sitemap.xml", async (req, res) => {
     try {
       let newsItems = cachedNews;
@@ -201,20 +305,35 @@ ${itemsXml}
       }
 
       const today = new Date().toISOString().split("T")[0];
-      const itemsXml = newsItems.slice(0, 100).map((item) => {
-        const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(item.id || item.link || item.title)}`;
-        const imageTag = item.imageUrl
-          ? `\n    <image:image>\n      <image:loc>${escapeXml(item.imageUrl)}</image:loc>\n      <image:title>${escapeXml(item.title || "Tech News")}</image:title>\n    </image:image>`
-          : "";
-        const itemDate = item.date ? item.date.split("T")[0] : today;
+      const seenUrls = new Set<string>();
+      const itemsXml = newsItems
+        .slice(0, 100)
+        .map((item) => {
+          if (!item || !item.title) return "";
+          const rawKey = String(item.id || item.link || item.title).trim();
+          if (!rawKey) return "";
+          const itemUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(rawKey)}`;
+          if (seenUrls.has(itemUrl)) return "";
+          seenUrls.add(itemUrl);
 
-        return `  <url>
+          const validImage =
+            item.imageUrl && /^https?:\/\//i.test(item.imageUrl)
+              ? item.imageUrl
+              : null;
+          const imageTag = validImage
+            ? `\n    <image:image>\n      <image:loc>${escapeXml(validImage)}</image:loc>\n      <image:title>${escapeXml(item.title || "Tech News")}</image:title>\n    </image:image>`
+            : "";
+          const itemDate = toValidIsoDate(item.date, today);
+
+          return `  <url>
     <loc>${escapeXml(itemUrl)}</loc>
     <lastmod>${itemDate}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>${imageTag}
   </url>`;
-      }).join("\n");
+        })
+        .filter(Boolean)
+        .join("\n");
 
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
@@ -223,6 +342,10 @@ ${itemsXml}
     <lastmod>${today}</lastmod>
     <changefreq>hourly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.techhabesha.com.et/favicon-512.png</image:loc>
+      <image:title>Tech Habesha - Leading Technology News Aggregator</image:title>
+    </image:image>
   </url>
 ${itemsXml}
 </urlset>`;
@@ -235,6 +358,7 @@ ${itemsXml}
       res.status(500).send("Error generating Sitemap");
     }
   });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

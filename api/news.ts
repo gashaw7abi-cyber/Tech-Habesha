@@ -2,101 +2,80 @@ import Parser from "rss-parser";
 
 const parser = new Parser({
   customFields: {
-    item: ['media:content', 'media:thumbnail', 'content:encoded', 'description'],
-  }
+    item: ["media:content", "media:thumbnail", "content:encoded", "description"],
+  },
 });
 
-// Vercel Serverless Function handler
 export default async function handler(req: any, res: any) {
-  try {
-    let combinedNews: any[] = [];
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
 
-    // 1. Fetch from RSS Feeds (TechCrunch, The Verge, Engadget) for Gadgets/Phones/Computers
+  try {
     const rssFeeds = [
       "https://techcrunch.com/category/gadgets/feed/",
+      "https://techcrunch.com/feed/",
       "https://www.theverge.com/rss/index.xml",
-      "https://www.engadget.com/rss.xml"
+      "https://www.engadget.com/rss.xml",
+      "https://www.wired.com/feed/category/gear/latest/rss",
     ];
 
-    for (const feedUrl of rssFeeds) {
+    const rssPromises = rssFeeds.map(async (feedUrl) => {
       try {
         const feed = await parser.parseURL(feedUrl);
-        const mappedItems = feed.items.map(item => {
-          // Extract Image URL
+        return (feed.items || []).map((item: any) => {
           let imageUrl = null;
-          if (item['media:content']?.$?.url) {
-            imageUrl = item['media:content'].$.url;
-          } else if (item['media:thumbnail']?.$?.url) {
-            imageUrl = item['media:thumbnail'].$.url;
-          } else if (item['content:encoded'] || item.content) {
-            const htmlContent = item['content:encoded'] || item.content || "";
+          if (item["media:content"]?.$?.url) {
+            imageUrl = item["media:content"].$.url;
+          } else if (item["media:thumbnail"]?.$?.url) {
+            imageUrl = item["media:thumbnail"].$.url;
+          } else if (item["content:encoded"] || item.content) {
+            const htmlContent = item["content:encoded"] || item.content || "";
             const imgMatch = htmlContent.match(/<img[^>]+src="([^">]+)"/);
             if (imgMatch) {
               imageUrl = imgMatch[1];
             }
           }
 
-          // Extract text description
           let cleanDesc = item.contentSnippet || "";
-          if (!cleanDesc && (item.description || item['content:encoded'] || item.content)) {
-             const rawDesc = item.description || item['content:encoded'] || item.content || "";
-             cleanDesc = rawDesc.replace(/<[^>]+>/g, '').substring(0, 150) + "...";
+          if (!cleanDesc && (item.description || item["content:encoded"] || item.content)) {
+            const rawDesc = item.description || item["content:encoded"] || item.content || "";
+            cleanDesc = rawDesc.replace(/<[^>]+>/g, "").trim();
           }
 
           return {
-            id: item.guid || Math.random().toString(),
+            id: item.guid || item.link || Math.random().toString(),
             title: item.title,
-            source: feed.title || "Tech Source",
+            source: feed.title || "Tech Habesha",
             date: item.isoDate || item.pubDate || new Date().toISOString(),
             content: cleanDesc,
             link: item.link,
-            imageUrl: imageUrl
+            imageUrl: imageUrl,
           };
         });
-        combinedNews = combinedNews.concat(mappedItems);
       } catch (feedErr) {
-        console.error("Error fetching feed:", feedUrl, feedErr);
+        console.warn("Error fetching feed:", feedUrl, feedErr);
+        return [];
       }
-    }
+    });
 
-    // 2. Fetch Hacker News (To keep volume high)
-    try {
-      const topStoriesRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-      if (topStoriesRes.ok) {
-        const storyIds = await topStoriesRes.json();
-        const topIds = storyIds.slice(0, 130);
-        
-        // Chunk the requests
-        const hnStories = [];
-        for (let i = 0; i < topIds.length; i += 20) {
-          const chunk = topIds.slice(i, i + 20);
-          const chunkPromises = chunk.map((id: number) => 
-            fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())
-          );
-          const storyChunk = await Promise.all(chunkPromises);
-          hnStories.push(...storyChunk);
+    const rssResults = await Promise.all(rssPromises);
+    const seenKeys = new Set<string>();
+    const combinedNews: any[] = [];
+
+    for (const feedItems of rssResults) {
+      for (const item of feedItems) {
+        const uniqueKey = String(item.id || item.link || item.title || "").trim();
+        if (uniqueKey && !seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey);
+          if (item.link) seenKeys.add(String(item.link).trim());
+          combinedNews.push(item);
         }
-        
-        const formattedHN = hnStories.filter(Boolean).map((story: any) => ({
-          id: `hn-${story.id}`,
-          title: story.title,
-          source: "Hacker News",
-          date: new Date(story.time * 1000).toISOString(),
-          content: `Score: ${story.score} points by ${story.by}.`,
-          link: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
-          imageUrl: null // No image for Hacker News
-        }));
-        
-        combinedNews = combinedNews.concat(formattedHN);
       }
-    } catch (hnErr) {
-      console.error("Error fetching Hacker News:", hnErr);
     }
 
-    // Sort by date (newest first)
     combinedNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    res.status(200).json(combinedNews.slice(0, 200));
+    res.status(200).json(combinedNews.slice(0, 150));
   } catch (error) {
     console.error("Error fetching tech news:", error);
     res.status(500).json({ error: "Failed to fetch tech news" });

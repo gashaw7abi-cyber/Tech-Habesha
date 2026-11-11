@@ -24,10 +24,11 @@ import {
   Mail,
   AlertTriangle
 } from "lucide-react";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, getDocs, orderBy, limit, query, doc, setDoc, increment, getDoc, deleteDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
+import firebaseConfig from "./firebase-applet-config.json";
 import { techLogo } from "./logo";
 
 interface NewsItem {
@@ -196,6 +197,9 @@ export default function App() {
   const [news, setNews] = useState<NewsItem[]>(getCachedNews);
   const [loadingNews, setLoadingNews] = useState<boolean>(() => getCachedNews().length === 0);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const pendingNewsParamRef = useRef<string | null>(
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("news") : null
+  );
   
   // Auth state
   const [user, setUser] = useState<User | null>(null);
@@ -300,6 +304,7 @@ export default function App() {
       });
 
       // Synchronize URL query parameter without full reload
+      pendingNewsParamRef.current = null;
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('news', String(selectedNews.id || selectedNews.link || selectedNews.title));
@@ -307,6 +312,13 @@ export default function App() {
       } catch (e) {}
 
     } else {
+      // Do not strip ?news=... or reset canonical while initial deep link is still waiting for articles to load
+      if (pendingNewsParamRef.current) {
+        const pendingUrl = `https://www.techhabesha.com.et/?news=${encodeURIComponent(pendingNewsParamRef.current)}`;
+        setMeta('link[rel="canonical"]', 'href', pendingUrl);
+        return;
+      }
+
       document.title = "Tech Habesha";
       const siteDesc = "Tech Habesha is a leading technology news aggregator and community platform based in Ethiopia, delivering the latest global tech trends, startup news, and digital innovations.";
       const siteUrl = "https://www.techhabesha.com.et/";
@@ -341,7 +353,7 @@ export default function App() {
     if (displayedNews.length > 0 && !selectedNews) {
       try {
         const params = new URLSearchParams(window.location.search);
-        const newsParam = params.get('news');
+        const newsParam = pendingNewsParamRef.current || params.get('news');
         if (newsParam) {
           const found = displayedNews.find(n => 
             String(n.id) === newsParam || 
@@ -349,12 +361,15 @@ export default function App() {
             String(n.title).toLowerCase() === newsParam.toLowerCase()
           );
           if (found) {
+            pendingNewsParamRef.current = null;
             setSelectedNews(found);
+          } else if (!loadingNews) {
+            pendingNewsParamRef.current = null;
           }
         }
       } catch (e) {}
     }
-  }, [displayedNews]);
+  }, [displayedNews, loadingNews, selectedNews]);
 
   useEffect(() => {
     // Handle hash links for AdSense crawlers/direct links
@@ -485,7 +500,7 @@ export default function App() {
 
   const fetchUpdatedNews = async () => {
     try {
-      // 1. Fetch Firestore custom news (with 4s timeout)
+      // 1. Fetch Firestore custom news (with 4s timeout and REST fallback)
       const firestorePromise = (async (): Promise<NewsItem[]> => {
         try {
           const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 4000));
@@ -494,7 +509,7 @@ export default function App() {
             return null;
           });
           const firestoreRes = await Promise.race([q, timeoutPromise]) as any;
-          if (firestoreRes && firestoreRes.docs) {
+          if (firestoreRes && firestoreRes.docs && firestoreRes.docs.length > 0) {
             return firestoreRes.docs.map((doc: any) => {
               const data = doc.data();
               return {
@@ -503,13 +518,53 @@ export default function App() {
                 source: data.source || "Tech Habesha",
                 date: data.date?.toDate?.()?.toISOString() || new Date().toISOString(),
                 content: data.content,
+                metaDescription: data.metaDescription || undefined,
                 link: data.link || "",
                 imageUrl: data.imageUrl || undefined
               };
             });
           }
         } catch (err) {
-          console.warn("Firestore fetch error or timeout:", err);
+          console.warn("Firestore SDK fetch timeout, using REST fallback:", err);
+        }
+
+        // Fast HTTPS REST API fallback if Firestore WebChannel is blocked on mobile network
+        try {
+          const restUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents:runQuery?key=${firebaseConfig.apiKey}`;
+          const res = await fetch(restUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              structuredQuery: {
+                from: [{ collectionId: "custom_news" }],
+                orderBy: [{ field: { fieldPath: "date" }, direction: "DESCENDING" }],
+                limit: 50
+              }
+            })
+          });
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows)) {
+              return rows
+                .filter((r: any) => r.document && r.document.fields)
+                .map((r: any) => {
+                  const d = r.document;
+                  const f = d.fields;
+                  return {
+                    id: d.name.split("/").pop(),
+                    title: f.title?.stringValue || "Tech Habesha",
+                    source: f.source?.stringValue || "Tech Habesha",
+                    date: f.date?.timestampValue || d.createTime || new Date().toISOString(),
+                    content: f.content?.stringValue || "",
+                    metaDescription: f.metaDescription?.stringValue || undefined,
+                    link: f.link?.stringValue || "",
+                    imageUrl: f.imageUrl?.stringValue || undefined
+                  };
+                });
+            }
+          }
+        } catch (restErr) {
+          console.warn("Firestore REST fallback failed:", restErr);
         }
         return [];
       })();
