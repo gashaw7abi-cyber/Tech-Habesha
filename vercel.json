@@ -1,4 +1,18 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "techhabesha.com.et"
+        }
+      ],
+      "destination": "https://www.techhabesha.com.et/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/feed.xml", "destination": "/api/rss" },
     { "source": "/rss", "destination": "/api/rss" }
